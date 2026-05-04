@@ -27,11 +27,17 @@ function Index() {
               <Swords className="w-5 h-5 text-primary" />
             </div>
             <span className="font-display font-black tracking-[0.25em] text-lg">ROBOT WARS</span>
+            <span className="hidden sm:inline-flex items-center gap-1.5 ml-3 pl-3 border-l border-primary/30 text-[10px] tracking-[0.3em] text-muted-foreground font-display">
+              A <span className="text-accent font-black">KULT</span><span className="text-foreground/80">GAMES</span> TITLE
+            </span>
           </a>
           <nav className="hidden md:flex items-center gap-8 text-sm font-display tracking-widest text-muted-foreground">
             <a href="#features" className="hover:text-primary transition">ARENAS</a>
             <a href="#trailer" className="hover:text-primary transition">TRAILER</a>
             <a href="#manual" className="hover:text-primary transition">MANUAL</a>
+            <a href="https://www.kult.games/" target="_blank" rel="noopener noreferrer" className="hidden lg:inline-flex items-center gap-2 px-3 py-1.5 border border-accent/40 text-accent text-xs hover:bg-accent/10 transition clip-blade">
+              KULT GAMES ↗
+            </a>
           </nav>
         </div>
       </header>
