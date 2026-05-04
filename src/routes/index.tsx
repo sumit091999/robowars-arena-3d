@@ -26,7 +26,7 @@ function Index() {
             <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary flex items-center justify-center">
               <Swords className="w-5 h-5 text-primary" />
             </div>
-            <span className="font-display font-black tracking-[0.25em] text-lg">ROBOT WARS</span>
+            <span className="font-display font-black tracking-[0.25em] text-lg">ROBOWARS</span>
             <span className="hidden sm:inline-flex items-center gap-1.5 ml-3 pl-3 border-l border-primary/30 text-[10px] tracking-[0.3em] text-muted-foreground font-display">
               A <span className="text-accent font-black">KULT</span><span className="text-foreground/80">GAMES</span> TITLE
             </span>
@@ -238,7 +238,7 @@ function Index() {
       </section>
 
       <footer className="border-t border-primary/20 py-8 px-6 flex flex-col md:flex-row items-center justify-center gap-3 text-center text-xs tracking-[0.3em] font-display text-muted-foreground">
-        <span>© ROBOT WARS — ALL SYSTEMS ARMED</span>
+        <span>© ROBOWARS — ALL SYSTEMS ARMED</span>
         <span className="hidden md:inline text-primary">|</span>
         <a href="https://www.kult.games/" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition">
           A <span className="text-accent">KULT</span>GAMES PRODUCTION ↗
