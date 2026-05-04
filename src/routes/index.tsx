@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { BookOpen, Swords, ChevronDown, Zap, Shield, Flame } from "lucide-react";
+import { BookOpen, Swords, ChevronDown, Zap, Shield, Flame, Menu, X } from "lucide-react";
 import { RobotScene } from "@/components/RobotScene";
 import { BackgroundScene } from "@/components/BackgroundScene";
 import { TrailerSection } from "@/components/TrailerSection";
@@ -10,6 +11,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <main className="relative min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Global animated 3D background */}
@@ -39,7 +42,27 @@ function Index() {
               KULT GAMES ↗
             </a>
           </nav>
+
+          {/* Hamburger Icon */}
+          <button 
+            className="md:hidden text-foreground hover:text-primary transition"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
+
+        {/* Mobile Menu Overlay */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 w-full bg-background/95 backdrop-blur-xl border-b border-primary/20 p-6 flex flex-col gap-6 shadow-2xl z-50">
+            <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-display tracking-widest text-foreground hover:text-primary transition">ARENAS</a>
+            <a href="#trailer" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-display tracking-widest text-foreground hover:text-primary transition">TRAILER</a>
+            <a href="#manual" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-display tracking-widest text-foreground hover:text-primary transition">MANUAL</a>
+            <a href="https://www.kult.games/" onClick={() => setIsMobileMenuOpen(false)} target="_blank" rel="noopener noreferrer" className="inline-flex w-max items-center gap-2 px-4 py-2 border border-accent/40 text-accent text-xs hover:bg-accent/10 transition clip-blade mt-2">
+              KULT GAMES ↗
+            </a>
+          </div>
+        )}
       </header>
 
       {/* HERO */}
@@ -56,7 +79,7 @@ function Index() {
             className="relative z-10"
           >
             <span className="inline-block text-accent text-xs tracking-[0.4em] font-display border border-accent/40 px-3 py-1 mb-6">
-              // SEASON 07 // LIVE NOW
+              LIVE NOW
             </span>
             <h1 className="font-display font-black text-6xl md:text-7xl lg:text-8xl leading-[0.9] text-glow">
               ENTER<br />
@@ -119,7 +142,6 @@ function Index() {
           href="#features"
           className="absolute bottom-6 left-1/2 -translate-x-1/2 text-muted-foreground hover:text-primary transition flex flex-col items-center gap-1"
         >
-          <span className="text-[10px] tracking-[0.3em] font-display">SCROLL</span>
           <ChevronDown className="w-5 h-5 animate-bounce" />
         </a>
       </section>
@@ -128,7 +150,7 @@ function Index() {
       <section id="features" className="relative py-24 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <span className="text-accent text-sm tracking-[0.3em] font-display">// COMBAT FEATURES</span>
+            <span className="text-accent text-sm tracking-[0.3em] font-display">COMBAT FEATURES</span>
             <h2 className="text-5xl md:text-6xl font-display font-black mt-3">
               BUILT FOR <span className="text-primary">CARNAGE</span>
             </h2>
@@ -185,7 +207,7 @@ function Index() {
       <section className="relative py-20 px-6 border-t border-primary/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <span className="text-accent text-xs tracking-[0.4em] font-display">// POWERED BY</span>
+            <span className="text-accent text-xs tracking-[0.4em] font-display">POWERED BY</span>
             <h2 className="mt-3 font-display font-black text-4xl md:text-5xl tracking-wider">
               <span className="text-primary">KULT</span>
               <span className="text-foreground">GAMES</span>
@@ -197,41 +219,12 @@ function Index() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5">
-            {[
-              { tag: "FLAGSHIP", name: "ROBOWARS", desc: "Combat arena. Build, battle, dominate.", href: "#play", live: true },
-              { tag: "PARTNER", name: "ZERO G POOL", desc: "Your favorite 8-ball with a cosmic twist.", href: "https://zerogpool.xyz/" },
-              { tag: "PARTNER", name: "GUESS THE AI", desc: "Challenge your mind. Beat the AI.", href: "https://guesstheai.xyz/" },
-            ].map((g) => (
-              <a
-                key={g.name}
-                href={g.href}
-                target={g.href.startsWith("http") ? "_blank" : undefined}
-                rel="noopener noreferrer"
-                className="group relative p-6 bg-card backdrop-blur border border-accent/20 clip-blade hover:border-accent transition-all hover:shadow-cyan block"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] tracking-[0.3em] text-accent font-display">{g.tag}</span>
-                  {g.live && (
-                    <span className="flex items-center gap-1.5 text-[10px] tracking-widest text-primary font-display">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> LIVE
-                    </span>
-                  )}
-                </div>
-                <h3 className="font-display text-2xl font-black tracking-wider mt-3">{g.name}</h3>
-                <p className="text-muted-foreground mt-2 text-sm">{g.desc}</p>
-                <div className="mt-4 text-xs font-display tracking-widest text-accent group-hover:translate-x-1 transition-transform">
-                  ENTER →
-                </div>
-              </a>
-            ))}
-          </div>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-[10px] tracking-[0.3em] font-display text-muted-foreground">
             <span>PLAY</span><span className="text-primary">◆</span>
             <span>EARN</span><span className="text-primary">◆</span>
             <span>ENGAGE</span><span className="text-primary">◆</span>
-            <span>SOCIALFI</span><span className="text-primary">◆</span>
+            {/* <span>SOCIALFI</span><span className="text-primary">◆</span> */}
             <span>MULTICHAIN</span>
           </div>
         </div>

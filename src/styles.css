@@ -97,3 +97,23 @@
   background: linear-gradient(180deg, transparent, oklch(0.65 0.27 5 / 0.15), transparent);
   height: 30%; animation: scan 6s linear infinite; pointer-events: none;
 }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+  border-left: 1px solid oklch(0.65 0.27 5 / 0.15);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--accent), var(--primary));
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, var(--primary-glow), var(--accent));
+}

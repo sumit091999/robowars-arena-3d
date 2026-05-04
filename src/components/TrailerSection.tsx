@@ -15,7 +15,7 @@ export function TrailerSection() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <span className="text-accent text-sm tracking-[0.3em] font-display">// OFFICIAL REVEAL</span>
+          <span className="text-accent text-sm tracking-[0.3em] font-display">OFFICIAL REVEAL</span>
           <h2 className="text-5xl md:text-7xl font-display font-black mt-3 text-glow">
             WATCH THE <span className="text-primary">TRAILER</span>
           </h2>
