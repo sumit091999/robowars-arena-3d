@@ -1,7 +1,47 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Suspense, useMemo, useRef } from "react";
-import type { InstancedMesh, Points } from "three";
+import type { InstancedMesh, Points, Mesh, PlaneGeometry } from "three";
 import { Object3D, Color } from "three";
+
+function WavyPlane() {
+  const mesh = useRef<Mesh>(null);
+  const geomRef = useRef<PlaneGeometry>(null);
+  const original = useRef<Float32Array | null>(null);
+
+  useFrame((state) => {
+    const geom = geomRef.current;
+    if (!geom) return;
+    const pos = geom.attributes.position;
+    const arr = pos.array as Float32Array;
+    if (!original.current) original.current = arr.slice();
+    const base = original.current;
+    const t = state.clock.elapsedTime;
+    for (let i = 0; i < arr.length; i += 3) {
+      const x = base[i];
+      const y = base[i + 1];
+      arr[i + 2] =
+        Math.sin(x * 0.5 + t * 1.2) * 0.6 +
+        Math.cos(y * 0.5 + t * 0.9) * 0.6 +
+        Math.sin((x + y) * 0.3 + t * 0.6) * 0.4;
+    }
+    pos.needsUpdate = true;
+    if (mesh.current) mesh.current.rotation.z = t * 0.03;
+  });
+
+  return (
+    <mesh ref={mesh} rotation={[-Math.PI / 2.2, 0, 0]} position={[0, -4, -6]}>
+      <planeGeometry ref={geomRef} args={[40, 30, 60, 45]} />
+      <meshStandardMaterial
+        color={new Color("#e11d48")}
+        emissive={new Color("#06b6d4")}
+        emissiveIntensity={0.25}
+        wireframe
+        transparent
+        opacity={0.5}
+      />
+    </mesh>
+  );
+}
 
 function FloatingCubes({ count = 60 }: { count?: number }) {
   const mesh = useRef<InstancedMesh>(null);
@@ -84,6 +124,7 @@ export function BackgroundScene() {
         <pointLight position={[10, 10, 10]} color="#f43f5e" intensity={2} />
         <pointLight position={[-10, -5, 5]} color="#06b6d4" intensity={1.5} />
         <Starfield />
+        <WavyPlane />
         <FloatingCubes />
       </Suspense>
     </Canvas>
