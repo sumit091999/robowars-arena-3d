@@ -34,7 +34,7 @@ export function TrailerSection() {
             <iframe
               className="w-full h-full"
               src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
-              title="Robot Wars Trailer"
+              title="Robowars Trailer"
               allow="autoplay; encrypted-media"
               allowFullScreen
             />
