@@ -78,8 +78,12 @@ function Index() {
             transition={{ duration: 0.8 }}
             className="relative z-10 text-center min-[860px]:text-left"
           >
-            <span className="inline-block text-accent text-xs tracking-[0.4em] font-display border border-accent/40 px-3 py-1 mb-6">
-              LIVE NOW
+            <span className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 bg-accent/10 border border-accent/40 backdrop-blur-sm" style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
+              </span>
+              <span className="text-accent text-[10px] tracking-[0.4em] font-display font-bold">LIVE NOW</span>
             </span>
             <h1 className="font-display font-black text-6xl md:text-7xl min-[860px]:text-8xl leading-[0.9] text-glow">
               ENTER<br />
