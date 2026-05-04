@@ -27,11 +27,17 @@ function Index() {
               <Swords className="w-5 h-5 text-primary" />
             </div>
             <span className="font-display font-black tracking-[0.25em] text-lg">ROBOT WARS</span>
+            <span className="hidden sm:inline-flex items-center gap-1.5 ml-3 pl-3 border-l border-primary/30 text-[10px] tracking-[0.3em] text-muted-foreground font-display">
+              A <span className="text-accent font-black">KULT</span><span className="text-foreground/80">GAMES</span> TITLE
+            </span>
           </a>
           <nav className="hidden md:flex items-center gap-8 text-sm font-display tracking-widest text-muted-foreground">
             <a href="#features" className="hover:text-primary transition">ARENAS</a>
             <a href="#trailer" className="hover:text-primary transition">TRAILER</a>
             <a href="#manual" className="hover:text-primary transition">MANUAL</a>
+            <a href="https://www.kult.games/" target="_blank" rel="noopener noreferrer" className="hidden lg:inline-flex items-center gap-2 px-3 py-1.5 border border-accent/40 text-accent text-xs hover:bg-accent/10 transition clip-blade">
+              KULT GAMES ↗
+            </a>
           </nav>
         </div>
       </header>
@@ -175,8 +181,68 @@ function Index() {
         </div>
       </section>
 
-      <footer className="border-t border-primary/20 py-8 px-6 text-center text-xs tracking-[0.3em] font-display text-muted-foreground">
-        © ROBOT WARS — ALL SYSTEMS ARMED
+      {/* KULT ECOSYSTEM */}
+      <section className="relative py-20 px-6 border-t border-primary/20">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-accent text-xs tracking-[0.4em] font-display">// POWERED BY</span>
+            <h2 className="mt-3 font-display font-black text-4xl md:text-5xl tracking-wider">
+              <span className="text-primary">KULT</span>
+              <span className="text-foreground">GAMES</span>
+              <span className="text-muted-foreground"> ECOSYSTEM</span>
+            </h2>
+            <p className="mt-4 text-muted-foreground max-w-2xl mx-auto text-sm md:text-base">
+              An ecosystem <span className="text-accent">FOR GAMERS BY GAMERS</span>. A visionary Play &amp; Earn &amp; Engage
+              universe with SocialFi and multichain interoperability — Robowars joins the Kult roster.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              { tag: "FLAGSHIP", name: "ROBOWARS", desc: "Combat arena. Build, battle, dominate.", href: "#play", live: true },
+              { tag: "PARTNER", name: "ZERO G POOL", desc: "Your favorite 8-ball with a cosmic twist.", href: "https://zerogpool.xyz/" },
+              { tag: "PARTNER", name: "GUESS THE AI", desc: "Challenge your mind. Beat the AI.", href: "https://guesstheai.xyz/" },
+            ].map((g) => (
+              <a
+                key={g.name}
+                href={g.href}
+                target={g.href.startsWith("http") ? "_blank" : undefined}
+                rel="noopener noreferrer"
+                className="group relative p-6 bg-card backdrop-blur border border-accent/20 clip-blade hover:border-accent transition-all hover:shadow-cyan block"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] tracking-[0.3em] text-accent font-display">{g.tag}</span>
+                  {g.live && (
+                    <span className="flex items-center gap-1.5 text-[10px] tracking-widest text-primary font-display">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> LIVE
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-display text-2xl font-black tracking-wider mt-3">{g.name}</h3>
+                <p className="text-muted-foreground mt-2 text-sm">{g.desc}</p>
+                <div className="mt-4 text-xs font-display tracking-widest text-accent group-hover:translate-x-1 transition-transform">
+                  ENTER →
+                </div>
+              </a>
+            ))}
+          </div>
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-[10px] tracking-[0.3em] font-display text-muted-foreground">
+            <span>PLAY</span><span className="text-primary">◆</span>
+            <span>EARN</span><span className="text-primary">◆</span>
+            <span>ENGAGE</span><span className="text-primary">◆</span>
+            <span>SOCIALFI</span><span className="text-primary">◆</span>
+            <span>MULTICHAIN</span>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-primary/20 py-8 px-6 flex flex-col md:flex-row items-center justify-center gap-3 text-center text-xs tracking-[0.3em] font-display text-muted-foreground">
+        <span>© ROBOT WARS — ALL SYSTEMS ARMED</span>
+        <span className="hidden md:inline text-primary">|</span>
+        <a href="https://www.kult.games/" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition">
+          A <span className="text-accent">KULT</span>GAMES PRODUCTION ↗
+        </a>
       </footer>
     </main>
   );
