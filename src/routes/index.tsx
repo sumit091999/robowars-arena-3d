@@ -4,6 +4,8 @@ import { motion, Variants, useScroll, useSpring } from "framer-motion";
 import { BookOpen, Swords, ChevronDown, Zap, Shield, Flame, Menu, X } from "lucide-react";
 import { RobotScene } from "@/components/RobotScene";
 import { BackgroundScene } from "@/components/BackgroundScene";
+import { FooterVoidScene } from "@/components/FooterVoidScene";
+import { HeroEnergyScene } from "@/components/HeroEnergyScene";
 import { TrailerSection } from "@/components/TrailerSection";
 import documentationPdf from "@/assets/Documentation.pdf";
 
@@ -28,6 +30,14 @@ const staggerGroup: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.12, delayChildren: 0.08 } },
 };
+const hudStatuses = ["SYSTEM ONLINE", "ARENA LIVE", "MATCHMAKING READY"];
+const combatFeed = [
+  "BOT-07 ELIMINATED",
+  "ARENA CORE ACTIVE",
+  "NEW CHALLENGER DETECTED",
+  "SPINNER DAMAGE CRITICAL",
+  "PIT HAZARDS ARMED",
+];
 
 function Index() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -111,6 +121,9 @@ function Index() {
           className="absolute inset-y-0 -right-[25%] lg:-right-[35%] w-[150%] h-full bg-no-repeat bg-[position:right_center] bg-cover lg:bg-[length:auto_100%]"
           style={{ backgroundImage: `url(${heroImg})` }}
         />
+        <div className="absolute inset-0 pointer-events-none opacity-70 mix-blend-screen">
+          <HeroEnergyScene />
+        </div>
         
         {/* Dark overlay so text stays readable and blends the left edge */}
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent pointer-events-none" />
@@ -125,10 +138,7 @@ function Index() {
             className="relative z-10 text-center min-[860px]:text-left"
           >
             <span className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 bg-accent/10 border border-accent/40 backdrop-blur-sm" style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
-              </span>
+              <span className="hud-status-dot" />
               <span className="text-accent text-[10px] tracking-[0.4em] font-display font-bold">LIVE NOW</span>
             </span>
             <h1 className="font-display font-black text-6xl md:text-7xl min-[860px]:text-8xl leading-[0.9] text-glow">
@@ -145,7 +155,7 @@ function Index() {
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
                 href="#play"
-                className="group relative inline-flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow"
+                className="button-energy group relative inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow"
               >
                 <Swords className="w-5 h-5" />
                 PLAY GAME
@@ -156,7 +166,7 @@ function Index() {
                 href={documentationPdf}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 px-8 py-4 border-2 border-accent/60 text-accent font-display font-bold tracking-widest clip-blade hover:bg-accent/10 transition shadow-cyan"
+                className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 border-2 border-accent/60 text-accent font-display font-bold tracking-widest clip-blade hover:bg-accent/10 transition shadow-cyan"
               >
                 <BookOpen className="w-5 h-5" />
                 GAME MANUAL
@@ -181,10 +191,26 @@ function Index() {
 
         <a
           href="#features"
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 text-muted-foreground hover:text-primary transition flex flex-col items-center gap-1"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 text-accent transition hover:text-primary flex flex-col items-center gap-1 drop-shadow-[0_0_12px_var(--accent)]"
         >
-          <ChevronDown className="w-5 h-5 animate-bounce" />
+          <ChevronDown className="w-6 h-6 animate-bounce stroke-[3]" />
         </a>
+      </section>
+
+      {/* LIVE COMBAT TICKER */}
+      <section className="relative overflow-hidden border-y border-primary/20 bg-background/95 py-1.5">
+        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+        <div className="ticker-track relative flex w-max items-center gap-4 whitespace-nowrap font-display text-[10px] font-bold tracking-[0.22em] text-muted-foreground">
+          {[...combatFeed, ...combatFeed, ...combatFeed].map((item, index) => (
+            <span key={`${item}-${index}`} className="inline-flex items-center gap-4">
+              <span>{item}</span>
+              <img src={robowarlogo} alt="Robowars icon" className="h-4 w-4 object-contain opacity-85" />
+              <img src={roboLogo} alt="ROBOWARS" className="h-3.5 w-auto object-contain opacity-85" />
+              <img src={kultLogo} alt="KULT GAMES" className="h-3.5 w-auto object-contain opacity-75" />
+              <span className="text-primary">◆</span>
+            </span>
+          ))}
+        </div>
       </section>
 
       {/* FEATURES */}
@@ -261,10 +287,10 @@ function Index() {
             Read the manual. Pick your weapon. Step into the pit.
           </p>
           <div className="relative mt-10 flex flex-wrap justify-center gap-4" id="play">
-            <a href={documentationPdf} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-4 border-2 border-accent/60 text-accent font-display font-bold tracking-widest clip-blade hover:bg-accent/10 transition">
+            <a href={documentationPdf} target="_blank" rel="noopener noreferrer" className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 border-2 border-accent/60 text-accent font-display font-bold tracking-widest clip-blade hover:bg-accent/10 transition">
               <BookOpen className="w-5 h-5" /> GAME MANUAL
             </a>
-            <a href="#play" className="inline-flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow">
+            <a href="#play" className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow">
               <Swords className="w-5 h-5" /> PLAY GAME
             </a>
           </div>
@@ -286,7 +312,10 @@ function Index() {
             viewport={revealViewport}
             className="text-center mb-12"
           >
-            <span className="text-accent text-xs tracking-[0.4em] font-display">POWERED BY</span>
+            <span className="inline-flex items-center justify-center gap-2 text-accent text-xs tracking-[0.4em] font-display">
+              <span className="hud-status-dot" />
+              POWERED BY
+            </span>
             <h2 className="mt-3 font-display font-black text-4xl md:text-5xl tracking-wider">
               <span className="text-primary">KULT</span>
               <span className="text-foreground">GAMES</span>
@@ -316,7 +345,11 @@ function Index() {
       </section>
 
       <footer className="relative overflow-hidden border-t border-primary/20 bg-background px-6 py-12">
-        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+        <div className="absolute inset-0 pointer-events-none opacity-90">
+          <FooterVoidScene />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/45 to-background/85 pointer-events-none" />
+        <div className="absolute inset-0 bg-grid opacity-15 pointer-events-none" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent pointer-events-none" />
         <motion.div
           variants={staggerGroup}
@@ -330,6 +363,14 @@ function Index() {
             <p className="mx-auto mt-5 max-w-sm text-md leading-relaxed text-muted-foreground md:mx-0">
               Build your machine, enter the arena, and fight through a neon battleground powered by Kult Games.
             </p>
+            <div className="mt-6 flex flex-col items-center gap-2 md:items-start">
+              {hudStatuses.map((status) => (
+                <span key={status} className="inline-flex items-center gap-2 font-display text-[10px] tracking-[0.28em] text-accent">
+                  <span className="hud-status-dot" />
+                  {status}
+                </span>
+              ))}
+            </div>
             {/* <img src={kultLogo} alt="KULT GAMES" className="mt-6 h-7 w-auto object-contain opacity-80" /> */}
           </motion.div>
 
@@ -354,9 +395,14 @@ function Index() {
           <motion.div variants={fadeUp}>
             <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">Follow</h3>
             <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
-              <span>X (Twitter)</span>
-              <span>Discord</span>
-              <span>Telegram</span>
+              {["X (Twitter)", "Discord", "Telegram"].map((social) => (
+                <span
+                  key={social}
+                  className="transition-all duration-300 hover:text-accent hover:[text-shadow:0_0_14px_var(--accent)]"
+                >
+                  {social}
+                </span>
+              ))}
             </nav>
           </motion.div>
         </motion.div>
