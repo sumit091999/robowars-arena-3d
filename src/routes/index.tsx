@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { BookOpen, Swords, ChevronDown, Zap, Shield, Flame } from "lucide-react";
 import { RobotScene } from "@/components/RobotScene";
+import { BackgroundScene } from "@/components/BackgroundScene";
 import { TrailerSection } from "@/components/TrailerSection";
 
 export const Route = createFileRoute("/")({
@@ -10,7 +11,11 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <main className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <main className="relative min-h-screen bg-background text-foreground overflow-x-hidden">
+      {/* Global animated 3D background */}
+      <div className="fixed inset-0 -z-10 pointer-events-none opacity-60">
+        <BackgroundScene />
+      </div>
       {/* Top frame accents */}
       <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary z-50" />
 
