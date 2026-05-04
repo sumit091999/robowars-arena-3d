@@ -124,6 +124,7 @@ export function BackgroundScene() {
         <pointLight position={[10, 10, 10]} color="#f43f5e" intensity={2} />
         <pointLight position={[-10, -5, 5]} color="#06b6d4" intensity={1.5} />
         <Starfield />
+        <WavyPlane />
         <FloatingCubes />
       </Suspense>
     </Canvas>
