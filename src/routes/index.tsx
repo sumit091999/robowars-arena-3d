@@ -44,7 +44,7 @@ function Index() {
           </nav>
 
           {/* Hamburger Icon */}
-          <button 
+          <button
             className="md:hidden text-foreground hover:text-primary transition"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -70,27 +70,27 @@ function Index() {
         <div className="absolute inset-0 bg-grid opacity-40 pointer-events-none" />
         <div className="absolute inset-0 bg-arena pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-8 items-center min-h-[calc(100vh-6rem)]">
+        <div className="relative max-w-7xl mx-auto px-6 grid min-[860px]:grid-cols-2 gap-8 items-center min-h-[calc(100vh-6rem)]">
           {/* Text */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-            className="relative z-10"
+            className="relative z-10 text-center min-[860px]:text-left"
           >
             <span className="inline-block text-accent text-xs tracking-[0.4em] font-display border border-accent/40 px-3 py-1 mb-6">
               LIVE NOW
             </span>
-            <h1 className="font-display font-black text-6xl md:text-7xl lg:text-8xl leading-[0.9] text-glow">
+            <h1 className="font-display font-black text-6xl md:text-7xl min-[860px]:text-8xl leading-[0.9] text-glow">
               ENTER<br />
               THE <span className="text-primary">ARENA</span>
             </h1>
-            <p className="mt-6 text-lg text-muted-foreground max-w-lg leading-relaxed">
+            <p className="mt-6 text-lg text-muted-foreground max-w-lg leading-relaxed mx-auto min-[860px]:mx-0">
               Forge a war machine of fury and steel. Pit it against ruthless AI champions in arenas built to destroy.
               Only one rolls out. <span className="text-foreground">Will it be yours?</span>
             </p>
 
-            <div className="mt-10 flex flex-wrap gap-4">
+            <div className="mt-10 flex flex-wrap gap-4 justify-center min-[860px]:justify-start">
               <motion.a
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
@@ -112,7 +112,7 @@ function Index() {
             </div>
 
             {/* Stats strip */}
-            <div className="mt-12 grid grid-cols-3 gap-6 max-w-md">
+            <div className="mt-12 grid grid-cols-3 gap-6 max-w-md mx-auto min-[860px]:mx-0">
               {[
                 { v: "24+", l: "ROBOTS" },
                 { v: "8", l: "ARENAS" },
