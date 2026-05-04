@@ -15,7 +15,7 @@ export function TrailerSection() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: false, amount: 0.22 }}
           transition={{ duration: 0.65, ease: "easeOut" }}
           className="text-center mb-12"
         >
@@ -31,7 +31,7 @@ export function TrailerSection() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
+          viewport={{ once: false, amount: 0.22 }}
           transition={{ duration: 0.65, ease: "easeOut" }}
           className="relative aspect-video clip-blade border-2 border-primary/40 shadow-glow overflow-hidden bg-card/80 backdrop-blur-sm"
         >

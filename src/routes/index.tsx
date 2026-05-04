@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const revealViewport = { once: true, amount: 0.22 };
+const revealViewport = { once: false, amount: 0.22 };
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 36 },
   show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: "easeOut" } },
@@ -35,7 +35,7 @@ function Index() {
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
-    restDelta: 0.001
+    restDelta: 0.001,
   });
 
   useLayoutEffect(() => {
@@ -61,7 +61,7 @@ function Index() {
         <BackgroundScene />
       </div>
       {/* Top frame accents */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary z-50" />
+      <div className="fixed top-0 left-0 right-0 h-1 bg-primary/15 z-50" />
 
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-40 px-6 py-5 backdrop-blur-md bg-background/40 border-b border-primary/20">
