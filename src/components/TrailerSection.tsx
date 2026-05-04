@@ -1,15 +1,10 @@
 import { Play } from "lucide-react";
 import { motion } from "framer-motion";
-import trailerBg from "@/assets/ChatGPT Image May 4, 2026, 10_29_48 PM.png";
 
 export function TrailerSection() {
   return (
-    <section
-      id="trailer"
-      className="relative overflow-hidden bg-cover bg-center bg-no-repeat px-6 py-24"
-      style={{ backgroundImage: `url(${trailerBg})` }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/68 to-background/90 pointer-events-none" />
+    <section id="trailer" className="relative overflow-hidden px-6 py-24">
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background pointer-events-none" />
       <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none" />
       <div className="max-w-6xl mx-auto relative">
         <motion.div
