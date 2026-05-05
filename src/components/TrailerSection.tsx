@@ -16,9 +16,9 @@ export function TrailerSection() {
           </p>
         </div>
 
-        <div className="relative aspect-video overflow-hidden border-2 border-primary/20 bg-card/40 clip-blade shadow-glow">
-          <div 
-            className="relative w-full h-full flex items-center justify-center bg-cover bg-center"
+        <div className="trailer-border-orbit relative aspect-video overflow-hidden p-[2px] clip-blade shadow-glow">
+          <div
+            className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden bg-card/40 bg-cover bg-center clip-blade"
             style={{ backgroundImage: `url(${trailerBg})` }}
           >
             <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
@@ -26,7 +26,9 @@ export function TrailerSection() {
               <div className="w-24 h-24 rounded-full border-2 border-primary bg-primary/20 flex items-center justify-center">
                 <Play className="w-10 h-10 text-primary-foreground fill-current ml-1" />
               </div>
-              <span className="mt-6 font-display tracking-[0.3em] text-sm text-foreground/80 uppercase">Coming Soon</span>
+              <span className="mt-6 font-display tracking-[0.3em] text-sm text-foreground/80 uppercase">
+                Coming Soon
+              </span>
             </div>
           </div>
         </div>

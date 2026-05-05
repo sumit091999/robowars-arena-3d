@@ -1,7 +1,8 @@
 import { useState, useEffect, useLayoutEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { usePrivy } from "@privy-io/react-auth";
 import { motion, Variants, useScroll, useSpring } from "framer-motion";
-import { BookOpen, Swords, ChevronDown, Zap, Shield, Flame, Menu, X } from "lucide-react";
+import { BookOpen, Swords, ChevronDown, Zap, Shield, Flame, Menu, X, Unplug } from "lucide-react";
 import { RobotScene } from "@/components/RobotScene";
 import { BackgroundScene } from "@/components/BackgroundScene";
 import { FooterVoidScene } from "@/components/FooterVoidScene";
@@ -67,6 +68,62 @@ function FooterSocialIcon({ icon }: { icon: string }) {
   );
 }
 
+function PlayGameAuthButton({ className }: { className: string }) {
+  const { ready, authenticated, login } = usePrivy();
+
+  if (authenticated) {
+    return (
+      <motion.a
+        whileHover={{ scale: 1.04 }}
+        whileTap={{ scale: 0.97 }}
+        href="#play"
+        className={className}
+      >
+        <Swords className="w-5 h-5" />
+        PLAY GAME
+      </motion.a>
+    );
+  }
+
+  return (
+    <motion.button
+      whileHover={{ scale: ready ? 1.04 : 1 }}
+      whileTap={{ scale: ready ? 0.97 : 1 }}
+      type="button"
+      disabled={!ready}
+      onClick={() => login()}
+      className={`${className} disabled:pointer-events-none disabled:opacity-50`}
+    >
+      <Swords className="w-5 h-5" />
+      {ready ? "LOGIN" : "LOADING"}
+    </motion.button>
+  );
+}
+
+function DisconnectButton({ onComplete }: { onComplete?: () => void }) {
+  const { ready, authenticated, logout } = usePrivy();
+
+  if (!authenticated) {
+    return null;
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={!ready}
+      aria-label="Disconnect"
+      title="Disconnect"
+      onClick={() => {
+        logout();
+        onComplete?.();
+      }}
+      className="grid h-9 w-9 place-items-center rounded-full border border-accent/50 bg-secondary/70 text-accent shadow-[0_0_14px_oklch(0.78_0.18_200_/_0.18)] transition hover:border-primary hover:bg-primary/15 hover:text-foreground hover:shadow-[0_0_18px_oklch(0.65_0.27_5_/_0.32)] disabled:pointer-events-none disabled:opacity-50"
+    >
+      <Unplug className="h-4 w-4" />
+    </button>
+  );
+}
+
 function Index() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { scrollYProgress } = useScroll();
@@ -79,7 +136,7 @@ function Index() {
   useLayoutEffect(() => {
     // Force scroll to top immediately
     window.scrollTo(0, 0);
-    
+
     // Clear hash if present to prevent browser jumping
     if (window.location.hash) {
       window.history.replaceState(null, "", window.location.pathname);
@@ -103,26 +160,38 @@ function Index() {
 
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-40 px-6 py-5 backdrop-blur-md bg-background/40 border-b border-primary/20">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto grid grid-cols-[1fr_auto] items-center md:grid-cols-[1fr_auto_1fr]">
+          <div className="flex items-center gap-3 justify-self-start">
             {/* <img src={robowarlogo} alt="Robowars Logo" className="h-12 w-auto object-contain" /> */}
             <img src={roboLogo} alt="Robowars Logo" className="h-8 w-auto object-contain" />
             {/* <span className="hidden sm:inline-flex items-center gap-1.5 ml-3 pl-3 border-l border-primary/30">
               <img src={kultLogo} alt="Kult Games" className="h-8 w-auto object-contain opacity-80" />
             </span> */}
           </div>
-          <nav className="hidden md:flex items-center gap-8 text-sm font-display tracking-widest text-muted-foreground">
-            <a href="#features" className="hover:text-primary transition">ARENAS</a>
-            <a href="#trailer" className="hover:text-primary transition">TRAILER</a>
-            <a href={documentationPdf} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition">MANUAL</a>
-            <div className="hidden lg:block">
-              <img src={kultLogo} alt="Kult Games" className="h-8 w-auto object-contain opacity-80" />
-            </div>
+          <nav className="hidden items-center gap-8 justify-self-center text-sm font-display tracking-widest text-muted-foreground md:flex">
+            <a href="#features" className="hover:text-primary transition">
+              ARENAS
+            </a>
+            <a href="#trailer" className="hover:text-primary transition">
+              TRAILER
+            </a>
+            <a
+              href={documentationPdf}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary transition"
+            >
+              MANUAL
+            </a>
           </nav>
+          <div className="hidden items-center gap-5 justify-self-end md:flex">
+            <img src={kultLogo} alt="Kult Games" className="h-8 w-auto object-contain opacity-80" />
+            <DisconnectButton />
+          </div>
 
           {/* Hamburger Icon */}
           <button
-            className="md:hidden text-foreground hover:text-primary transition"
+            className="justify-self-end text-foreground transition hover:text-primary md:hidden"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -132,11 +201,38 @@ function Index() {
         {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
           <div className="md:hidden absolute top-full left-0 w-full bg-background/95 backdrop-blur-xl border-b border-primary/20 p-6 flex flex-col gap-6 shadow-2xl z-50">
-            <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-display tracking-widest text-foreground hover:text-primary transition">ARENAS</a>
-            <a href="#trailer" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-display tracking-widest text-foreground hover:text-primary transition">TRAILER</a>
-            <a href={documentationPdf} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-display tracking-widest text-foreground hover:text-primary transition">MANUAL</a>
+            <a
+              href="#features"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-sm font-display tracking-widest text-foreground hover:text-primary transition"
+            >
+              ARENAS
+            </a>
+            <a
+              href="#trailer"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-sm font-display tracking-widest text-foreground hover:text-primary transition"
+            >
+              TRAILER
+            </a>
+            <a
+              href={documentationPdf}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-sm font-display tracking-widest text-foreground hover:text-primary transition"
+            >
+              MANUAL
+            </a>
+            <div className="mt-1">
+              <DisconnectButton onComplete={() => setIsMobileMenuOpen(false)} />
+            </div>
             <div className="flex items-center gap-2 mt-2">
-              <img src={kultLogo} alt="Kult Games" className="h-8 w-auto object-contain opacity-80" />
+              <img
+                src={kultLogo}
+                alt="Kult Games"
+                className="h-8 w-auto object-contain opacity-80"
+              />
             </div>
           </div>
         )}
@@ -145,14 +241,14 @@ function Index() {
       {/* HERO */}
       <section className="relative min-h-screen pt-24 bg-black overflow-hidden">
         {/* Background Image Container */}
-        <div 
+        <div
           className="absolute inset-y-0 -right-[25%] lg:-right-[35%] w-[150%] h-full bg-no-repeat bg-[position:right_center] bg-cover lg:bg-[length:auto_100%]"
           style={{ backgroundImage: `url(${heroImg})` }}
         />
         <div className="absolute inset-0 pointer-events-none opacity-70 mix-blend-screen">
           <HeroEnergyScene />
         </div>
-        
+
         {/* Dark overlay so text stays readable and blends the left edge */}
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-grid opacity-40 pointer-events-none" />
@@ -165,29 +261,31 @@ function Index() {
             transition={{ duration: 0.8 }}
             className="relative z-10 text-center min-[860px]:text-left"
           >
-            <span className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 bg-accent/10 border border-accent/40 backdrop-blur-sm" style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}>
+            <span
+              className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 bg-accent/10 border border-accent/40 backdrop-blur-sm"
+              style={{
+                clipPath:
+                  "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))",
+              }}
+            >
               <span className="hud-status-dot" />
-              <span className="text-accent text-[10px] tracking-[0.4em] font-display font-bold">LIVE NOW</span>
+              <span className="text-accent text-[10px] tracking-[0.4em] font-display font-bold">
+                LIVE NOW
+              </span>
             </span>
             <h1 className="font-display font-black text-6xl md:text-7xl min-[860px]:text-8xl leading-[0.9] text-glow">
-              ENTER<br />
+              ENTER
+              <br />
               THE <span className="text-primary">ARENA</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-lg leading-relaxed mx-auto min-[860px]:mx-0">
-              Forge a war machine of fury and steel. Pit it against ruthless AI champions in arenas built to destroy.
-              Only one rolls out. <span className="text-foreground">Will it be yours?</span>
+              Forge a war machine of fury and steel. Pit it against ruthless AI champions in arenas
+              built to destroy. Only one rolls out.{" "}
+              <span className="text-foreground">Will it be yours?</span>
             </p>
 
             <div className="mt-10 flex flex-wrap gap-4 justify-center min-[860px]:justify-start">
-              <motion.a
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                href="#play"
-                className="button-energy group relative inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow"
-              >
-                <Swords className="w-5 h-5" />
-                PLAY GAME
-              </motion.a>
+              <PlayGameAuthButton className="button-energy group relative inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
               <motion.a
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
@@ -232,9 +330,21 @@ function Index() {
           {[...combatFeed, ...combatFeed, ...combatFeed].map((item, index) => (
             <span key={`${item}-${index}`} className="inline-flex items-center gap-4">
               <span>{item}</span>
-              <img src={robowarlogo} alt="Robowars icon" className="h-4 w-4 object-contain opacity-85" />
-              <img src={roboLogo} alt="ROBOWARS" className="h-3.5 w-auto object-contain opacity-85" />
-              <img src={kultLogo} alt="KULT GAMES" className="h-3.5 w-auto object-contain opacity-75" />
+              <img
+                src={robowarlogo}
+                alt="Robowars icon"
+                className="h-4 w-4 object-contain opacity-85"
+              />
+              <img
+                src={roboLogo}
+                alt="ROBOWARS"
+                className="h-3.5 w-auto object-contain opacity-85"
+              />
+              <img
+                src={kultLogo}
+                alt="KULT GAMES"
+                className="h-3.5 w-auto object-contain opacity-75"
+              />
               <span className="text-primary">◆</span>
             </span>
           ))}
@@ -257,7 +367,9 @@ function Index() {
             viewport={revealViewport}
             className="text-center mb-16"
           >
-            <span className="text-accent text-sm tracking-[0.3em] font-display">COMBAT FEATURES</span>
+            <span className="text-accent text-sm tracking-[0.3em] font-display">
+              COMBAT FEATURES
+            </span>
             <h2 className="text-5xl md:text-6xl font-display font-black mt-3">
               BUILT FOR <span className="text-primary">CARNAGE</span>
             </h2>
@@ -270,19 +382,33 @@ function Index() {
             className="grid md:grid-cols-3 gap-6"
           >
             {[
-              { icon: Zap, title: "FLYWHEEL FURY", desc: "High-speed spinning blades that turn metal into shrapnel." },
-              { icon: Flame, title: "CRUSHING PIT", desc: "Fire vents and shredders. Stay still and you're scrap." },
-              { icon: Shield, title: "CUSTOM ARMOR", desc: "Tune speed, power, paint. Make the machine yours." },
-            ].map((f, i) => (
+              {
+                icon: Zap,
+                title: "FLYWHEEL FURY",
+                desc: "High-speed spinning blades that turn metal into shrapnel.",
+              },
+              {
+                icon: Flame,
+                title: "CRUSHING PIT",
+                desc: "Fire vents and shredders. Stay still and you're scrap.",
+              },
+              {
+                icon: Shield,
+                title: "CUSTOM ARMOR",
+                desc: "Tune speed, power, paint. Make the machine yours.",
+              },
+            ].map((f) => (
               <motion.div
                 key={f.title}
                 variants={fadeUp}
-                className="group relative p-8 bg-card backdrop-blur border border-primary/20 clip-blade hover:border-primary transition-all hover:shadow-glow"
+                className="carnage-card-orbit group relative overflow-hidden p-[2px] clip-blade transition-all hover:shadow-glow"
               >
-                <div className="absolute top-0 right-0 w-1 h-12 bg-primary" />
-                <f.icon className="w-10 h-10 text-primary mb-4" />
-                <h3 className="font-display text-2xl font-black tracking-wider">{f.title}</h3>
-                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{f.desc}</p>
+                <div className="relative z-10 h-full bg-card p-8 backdrop-blur border border-primary/20 clip-blade transition-all group-hover:border-primary">
+                  <div className="absolute top-0 right-0 w-1 h-12 bg-primary" />
+                  <f.icon className="w-10 h-10 text-primary mb-4" />
+                  <h3 className="font-display text-2xl font-black tracking-wider">{f.title}</h3>
+                  <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{f.desc}</p>
+                </div>
               </motion.div>
             ))}
           </motion.div>
@@ -315,12 +441,15 @@ function Index() {
             Read the manual. Pick your weapon. Step into the pit.
           </p>
           <div className="relative mt-10 flex flex-wrap justify-center gap-4" id="play">
-            <a href={documentationPdf} target="_blank" rel="noopener noreferrer" className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 border-2 border-accent/60 text-accent font-display font-bold tracking-widest clip-blade hover:bg-accent/10 transition">
+            <a
+              href={documentationPdf}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 border-2 border-accent/60 text-accent font-display font-bold tracking-widest clip-blade hover:bg-accent/10 transition"
+            >
               <BookOpen className="w-5 h-5" /> GAME MANUAL
             </a>
-            <a href="#play" className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow">
-              <Swords className="w-5 h-5" /> PLAY GAME
-            </a>
+            <PlayGameAuthButton className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
           </div>
         </motion.div>
       </section>
@@ -350,11 +479,11 @@ function Index() {
               <span className="text-muted-foreground"> ECOSYSTEM</span>
             </h2>
             <p className="mt-4 text-muted-foreground max-w-2xl mx-auto text-sm md:text-base">
-              An ecosystem <span className="text-accent">FOR GAMERS BY GAMERS</span>. A visionary Play &amp; Earn &amp; Engage
-              universe with SocialFi and multichain interoperability — Robowars joins the Kult roster.
+              An ecosystem <span className="text-accent">FOR GAMERS BY GAMERS</span>. A visionary
+              Play &amp; Earn &amp; Engage universe with SocialFi and multichain interoperability —
+              Robowars joins the Kult roster.
             </p>
           </motion.div>
-
 
           <motion.div
             variants={fadeUp}
@@ -363,9 +492,12 @@ function Index() {
             viewport={revealViewport}
             className="mt-10 flex flex-wrap items-center justify-center gap-3 text-[10px] tracking-[0.3em] font-display text-muted-foreground"
           >
-            <span>PLAY</span><span className="text-primary">◆</span>
-            <span>EARN</span><span className="text-primary">◆</span>
-            <span>ENGAGE</span><span className="text-primary">◆</span>
+            <span>PLAY</span>
+            <span className="text-primary">◆</span>
+            <span>EARN</span>
+            <span className="text-primary">◆</span>
+            <span>ENGAGE</span>
+            <span className="text-primary">◆</span>
             {/* <span>SOCIALFI</span><span className="text-primary">◆</span> */}
             <span>MULTICHAIN</span>
           </motion.div>
@@ -387,9 +519,14 @@ function Index() {
           className="relative mx-auto grid max-w-6xl gap-10 text-center md:grid-cols-[1.45fr_1fr_1fr_1fr] md:text-left"
         >
           <motion.div variants={fadeUp}>
-            <img src={roboLogo} alt="ROBOWARS" className="mx-auto h-8 w-auto object-contain md:mx-0" />
+            <img
+              src={roboLogo}
+              alt="ROBOWARS"
+              className="mx-auto h-8 w-auto object-contain md:mx-0"
+            />
             <p className="mx-auto mt-5 max-w-sm text-md leading-relaxed text-muted-foreground md:mx-0">
-              Build your machine, enter the arena, and fight through a neon battleground powered by Kult Games.
+              Build your machine, enter the arena, and fight through a neon battleground powered by
+              Kult Games.
             </p>
             <nav className="mt-5 flex items-center justify-center gap-2.5 md:justify-start">
               {footerSocialLinks.map((social) => (
@@ -409,25 +546,53 @@ function Index() {
           </motion.div>
 
           <motion.div variants={fadeUp}>
-            <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">Game</h3>
+            <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">
+              Game
+            </h3>
             <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
-              <a href="#play" className="transition hover:text-primary">Play Game</a>
-              <a href="#features" className="transition hover:text-primary">Arenas</a>
-              <a href="#trailer" className="transition hover:text-primary">Trailer</a>
+              <a href="#play" className="transition hover:text-primary">
+                Play Game
+              </a>
+              <a href="#features" className="transition hover:text-primary">
+                Arenas
+              </a>
+              <a href="#trailer" className="transition hover:text-primary">
+                Trailer
+              </a>
             </nav>
           </motion.div>
 
           <motion.div variants={fadeUp}>
-            <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">Resources</h3>
+            <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">
+              Resources
+            </h3>
             <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
-              <a href={documentationPdf} target="_blank" rel="noopener noreferrer" className="transition hover:text-primary">Game Manual</a>
-              <a href="#manual" className="transition hover:text-primary">Fight Brief</a>
-              <a href="https://www.kult.games/" target="_blank" rel="noopener noreferrer" className="transition hover:text-primary">Kult Games</a>
+              <a
+                href={documentationPdf}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition hover:text-primary"
+              >
+                Game Manual
+              </a>
+              <a href="#manual" className="transition hover:text-primary">
+                Fight Brief
+              </a>
+              <a
+                href="https://www.kult.games/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition hover:text-primary"
+              >
+                Kult Games
+              </a>
             </nav>
           </motion.div>
 
           <motion.div variants={fadeUp}>
-            <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">Follow</h3>
+            <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">
+              Follow
+            </h3>
             <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
               {footerSocialLinks.map((social) => (
                 <a
@@ -442,7 +607,6 @@ function Index() {
               ))}
             </nav>
           </motion.div>
-
         </motion.div>
 
         <motion.div
@@ -452,7 +616,9 @@ function Index() {
           viewport={revealViewport}
           className="relative mx-auto mt-10 flex max-w-6xl flex-col items-center gap-3 border-t border-primary/15 pt-6 text-center text-xs text-muted-foreground md:flex-row md:justify-between md:text-left"
         >
-          <span className="font-display tracking-[0.25em]">© ROBOWARS — ALL SYSTEMS ARMED</span>
+          <span className="font-display tracking-[0.25em]">
+            © 2026 Robo Wars — All Systems Armed
+          </span>
           <img src={kultLogo} alt="KULT GAMES" className="h-7 w-auto object-contain opacity-80" />
         </motion.div>
       </footer>

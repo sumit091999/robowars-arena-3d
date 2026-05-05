@@ -162,6 +162,34 @@
     clip-path: var(--clip-blade);
     pointer-events: none;
   }
+  .trailer-border-orbit::before,
+  .carnage-card-orbit::before {
+    content: "";
+    position: absolute;
+    inset: -70%;
+    background: conic-gradient(
+      from 270deg,
+      transparent 0deg,
+      transparent 250deg,
+      oklch(0.78 0.18 200 / 0.15) 278deg,
+      var(--accent) 302deg,
+      oklch(0.98 0.01 340) 315deg,
+      var(--primary) 330deg,
+      transparent 360deg
+    );
+    animation: trailer-border-spin 4s linear infinite;
+    pointer-events: none;
+  }
+  .trailer-border-orbit::after,
+  .carnage-card-orbit::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    z-index: 1;
+    border: 1px solid oklch(0.78 0.18 200 / 0.22);
+    clip-path: var(--clip-blade);
+    pointer-events: none;
+  }
 }
 
 @keyframes scan {
@@ -196,6 +224,11 @@
 @keyframes hologram-sweep {
   from { transform: translateX(-80%); }
   to { transform: translateX(80%); }
+}
+
+@keyframes trailer-border-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .scanline::after {
