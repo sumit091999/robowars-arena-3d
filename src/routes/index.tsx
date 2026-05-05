@@ -6,6 +6,7 @@ import {
   BookOpen,
   Swords,
   ChevronDown,
+  Download,
   Zap,
   Shield,
   Flame,
@@ -20,6 +21,12 @@ import { BackgroundScene } from "@/components/BackgroundScene";
 import { FooterVoidScene } from "@/components/FooterVoidScene";
 import { HeroEnergyScene } from "@/components/HeroEnergyScene";
 import { TrailerSection } from "@/components/TrailerSection";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import documentationPdf from "@/assets/Documentation.pdf";
 
 import gameImg1 from "@/assets/ChatGPT Image May 4, 2026, 07_03_40 PM.png";
@@ -54,6 +61,16 @@ const combatFeed = [
   "NEW CHALLENGER DETECTED",
   "SPINNER DAMAGE CRITICAL",
   "PIT HAZARDS ARMED",
+];
+const downloadOptions = [
+  {
+    label: "Download for Mac",
+    href: "https://github.com/sumit091999/robowars-arena-3d/releases/latest/download/Robowars-mac.dmg",
+  },
+  {
+    label: "Download for Windows",
+    href: "https://github.com/sumit091999/robowars-arena-3d/releases/latest/download/Robowars-windows.exe",
+  },
 ];
 
 function FooterSocialIcon({ icon }: { icon: string }) {
@@ -113,6 +130,43 @@ function PlayGameAuthButton({ className }: { className: string }) {
       </motion.button>
       <RobowarsLoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </>
+  );
+}
+
+function DownloadGameButton({ className }: { className: string }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <motion.button
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+          type="button"
+          className={className}
+        >
+          <Download className="w-5 h-5" />
+          DOWNLOAD
+          <ChevronDown className="w-4 h-4" />
+        </motion.button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        sideOffset={10}
+        className="min-w-56 border-primary/35 bg-background/95 p-2 font-display shadow-glow backdrop-blur"
+      >
+        {downloadOptions.map((option) => (
+          <DropdownMenuItem key={option.label} asChild>
+            <a
+              href={option.href}
+              download
+              className="cursor-pointer gap-3 rounded-sm px-3 py-3 text-xs font-bold tracking-[0.18em] text-foreground focus:text-primary"
+            >
+              <Download className="h-4 w-4 text-primary" />
+              {option.label}
+            </a>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -528,7 +582,7 @@ function Index() {
             </p>
 
             <div className="mt-10 flex flex-wrap gap-4 justify-center min-[860px]:justify-start">
-              <PlayGameAuthButton className="button-energy group relative inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
+              <DownloadGameButton className="button-energy group relative inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
               <motion.a
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
@@ -678,7 +732,7 @@ function Index() {
             >
               <BookOpen className="w-5 h-5" /> GAME MANUAL
             </a>
-            <PlayGameAuthButton className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
+            <DownloadGameButton className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
           </div>
         </motion.div>
       </section>
