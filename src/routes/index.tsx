@@ -173,6 +173,44 @@ function DownloadGameButton({ className }: { className: string }) {
   );
 }
 
+function FooterDownloadMenu() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 text-left transition hover:text-primary"
+        >
+          Download
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        sideOffset={8}
+        className="min-w-52 border-primary/35 bg-background/95 p-2 font-display shadow-glow backdrop-blur"
+      >
+        {downloadOptions.map((option) => (
+          <DropdownMenuItem key={option.label} asChild>
+            <a
+              href={option.href}
+              download
+              className="cursor-pointer gap-3 rounded-sm px-3 py-3 text-xs font-bold tracking-[0.16em] text-foreground focus:text-primary"
+            >
+              {option.label.includes("Windows") ? (
+                <WindowsLogo className="h-4 w-4 text-primary" />
+              ) : (
+                <MacLogo className="h-4 w-4 text-primary" />
+              )}
+              {option.label}
+            </a>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function WindowsLogo({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
@@ -446,7 +484,6 @@ function DisconnectButton({ onComplete }: { onComplete?: () => void }) {
 
 function Index() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { authenticated } = usePrivy();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -858,11 +895,7 @@ function Index() {
               Game
             </h3>
             <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
-              {authenticated && (
-                <a href="#play" className="transition hover:text-primary">
-                  Play Game
-                </a>
-              )}
+              <FooterDownloadMenu />
               <a href="#features" className="transition hover:text-primary">
                 Arenas
               </a>
