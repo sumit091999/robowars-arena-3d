@@ -57,7 +57,7 @@ function FloatingCubes({ count = 60 }: { count?: number }) {
         s: 0.15 + Math.random() * 0.45,
         speed: 0.2 + Math.random() * 0.6,
       })),
-    [count]
+    [count],
   );
 
   useFrame((state) => {
@@ -118,7 +118,11 @@ function Starfield({ count = 800 }: { count?: number }) {
 
 export function BackgroundScene() {
   return (
-    <Canvas camera={{ position: [0, 0, 12], fov: 60 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }}>
+    <Canvas
+      camera={{ position: [0, 0, 12], fov: 60 }}
+      dpr={[1, 1.5]}
+      gl={{ antialias: true, alpha: true }}
+    >
       <Suspense fallback={null}>
         <ambientLight intensity={0.4} />
         <pointLight position={[10, 10, 10]} color="#f43f5e" intensity={2} />

@@ -42,7 +42,14 @@ function HeroStarsBehindWave({ count = 900 }: { count?: number }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.045} color="#e7fbff" transparent opacity={0.68} sizeAttenuation depthWrite={false} />
+      <pointsMaterial
+        size={0.045}
+        color="#e7fbff"
+        transparent
+        opacity={0.68}
+        sizeAttenuation
+        depthWrite={false}
+      />
     </points>
   );
 }
@@ -94,7 +101,11 @@ function HeroWaveGrid() {
 
 export function HeroEnergyScene() {
   return (
-    <Canvas camera={{ position: [0, 1.6, 9], fov: 62 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }}>
+    <Canvas
+      camera={{ position: [0, 1.6, 9], fov: 62 }}
+      dpr={[1, 1.5]}
+      gl={{ antialias: true, alpha: true }}
+    >
       <Suspense fallback={null}>
         <ambientLight intensity={0.65} />
         <pointLight position={[5, 5, 5]} color="#e11d48" intensity={1.4} />

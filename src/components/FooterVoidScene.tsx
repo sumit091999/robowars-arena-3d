@@ -92,14 +92,25 @@ function StarLayer({ count = 700 }: { count?: number }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.08} color="#dffaff" transparent opacity={1} sizeAttenuation depthWrite={false} />
+      <pointsMaterial
+        size={0.08}
+        color="#dffaff"
+        transparent
+        opacity={1}
+        sizeAttenuation
+        depthWrite={false}
+      />
     </points>
   );
 }
 
 export function FooterVoidScene() {
   return (
-    <Canvas camera={{ position: [0, 2.2, 7], fov: 58 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }}>
+    <Canvas
+      camera={{ position: [0, 2.2, 7], fov: 58 }}
+      dpr={[1, 1.5]}
+      gl={{ antialias: true, alpha: true }}
+    >
       <Suspense fallback={null}>
         <ambientLight intensity={0.8} />
         <pointLight position={[0, 4, 4]} color="#06b6d4" intensity={1.8} />

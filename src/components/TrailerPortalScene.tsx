@@ -16,11 +16,25 @@ function ProjectionBeam() {
     <group ref={group} position={[0, -0.52, -2.4]} rotation={[Math.PI, 0, 0]}>
       <mesh>
         <coneGeometry args={[2.45, 3.45, 64, 1, true]} />
-        <meshBasicMaterial color="#06b6d4" transparent opacity={0.12} blending={AdditiveBlending} depthWrite={false} side={2} />
+        <meshBasicMaterial
+          color="#06b6d4"
+          transparent
+          opacity={0.12}
+          blending={AdditiveBlending}
+          depthWrite={false}
+          side={2}
+        />
       </mesh>
       <mesh>
         <coneGeometry args={[1.55, 3.2, 64, 1, true]} />
-        <meshBasicMaterial color="#e11d48" transparent opacity={0.06} blending={AdditiveBlending} depthWrite={false} side={2} />
+        <meshBasicMaterial
+          color="#e11d48"
+          transparent
+          opacity={0.06}
+          blending={AdditiveBlending}
+          depthWrite={false}
+          side={2}
+        />
       </mesh>
     </group>
   );
@@ -60,7 +74,15 @@ function BeamParticles({ count = 180 }: { count?: number }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.055} color="#dffaff" transparent opacity={0.82} sizeAttenuation blending={AdditiveBlending} depthWrite={false} />
+      <pointsMaterial
+        size={0.055}
+        color="#dffaff"
+        transparent
+        opacity={0.82}
+        sizeAttenuation
+        blending={AdditiveBlending}
+        depthWrite={false}
+      />
     </points>
   );
 }
@@ -84,11 +106,23 @@ function ProjectorBase() {
     <group ref={group} position={[0, -2.38, -1.9]}>
       <mesh>
         <cylinderGeometry args={[0.9, 1.05, 0.28, 48]} />
-        <meshStandardMaterial color="#120814" metalness={0.85} roughness={0.28} emissive="#e11d48" emissiveIntensity={0.18} />
+        <meshStandardMaterial
+          color="#120814"
+          metalness={0.85}
+          roughness={0.28}
+          emissive="#e11d48"
+          emissiveIntensity={0.18}
+        />
       </mesh>
       <mesh position={[0, 0.18, 0]}>
         <cylinderGeometry args={[0.55, 0.72, 0.2, 48]} />
-        <meshStandardMaterial color="#07141b" metalness={0.9} roughness={0.2} emissive="#06b6d4" emissiveIntensity={0.3} />
+        <meshStandardMaterial
+          color="#07141b"
+          metalness={0.9}
+          roughness={0.2}
+          emissive="#06b6d4"
+          emissiveIntensity={0.3}
+        />
       </mesh>
       <mesh ref={core} position={[0, 0.34, 0]}>
         <sphereGeometry args={[0.18, 32, 16]} />
@@ -111,11 +145,23 @@ function HologramFrameGlow() {
     <group ref={group} position={[0, 0.78, -2.75]}>
       <mesh>
         <planeGeometry args={[4.95, 2.62]} />
-        <meshBasicMaterial color="#06b6d4" transparent opacity={0.035} blending={AdditiveBlending} depthWrite={false} />
+        <meshBasicMaterial
+          color="#06b6d4"
+          transparent
+          opacity={0.035}
+          blending={AdditiveBlending}
+          depthWrite={false}
+        />
       </mesh>
       <mesh>
         <ringGeometry args={[1.75, 1.78, 96]} />
-        <meshBasicMaterial color="#06b6d4" transparent opacity={0.16} blending={AdditiveBlending} depthWrite={false} />
+        <meshBasicMaterial
+          color="#06b6d4"
+          transparent
+          opacity={0.16}
+          blending={AdditiveBlending}
+          depthWrite={false}
+        />
       </mesh>
     </group>
   );
@@ -123,7 +169,11 @@ function HologramFrameGlow() {
 
 export function TrailerPortalScene() {
   return (
-    <Canvas camera={{ position: [0, 0, 6], fov: 54 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }}>
+    <Canvas
+      camera={{ position: [0, 0, 6], fov: 54 }}
+      dpr={[1, 1.5]}
+      gl={{ antialias: true, alpha: true }}
+    >
       <Suspense fallback={null}>
         <ambientLight intensity={0.45} />
         <pointLight position={[4, 3, 3]} color="#e11d48" intensity={1.2} />
