@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useLoginWithEmail, useLoginWithOAuth, usePrivy } from "@privy-io/react-auth";
 import { motion, Variants, useScroll, useSpring } from "framer-motion";
 import {
-  Apple,
   BookOpen,
   Swords,
   ChevronDown,
@@ -194,6 +193,18 @@ function WindowsLogo({ className }: { className?: string }) {
   );
 }
 
+function MacLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path
+        fill="currentColor"
+        d="M4.5 4.5h15A2.5 2.5 0 0 1 22 7v8a2.5 2.5 0 0 1-2.5 2.5H14l.6 2H18a1 1 0 1 1 0 2H6a1 1 0 1 1 0-2h3.4l.6-2H4.5A2.5 2.5 0 0 1 2 15V7a2.5 2.5 0 0 1 2.5-2.5Zm0 2A.5.5 0 0 0 4 7v8a.5.5 0 0 0 .5.5h15a.5.5 0 0 0 .5-.5V7a.5.5 0 0 0-.5-.5h-15Z"
+      />
+      <path fill="currentColor" d="M11.15 17.5 10.55 19.5h2.9l-.6-2h-1.7Z" />
+    </svg>
+  );
+}
+
 function PlatformDownloadIcons() {
   return (
     <div className="mt-12 grid grid-cols-2 gap-8 max-w-xs mx-auto min-[860px]:mx-0">
@@ -210,7 +221,7 @@ function PlatformDownloadIcons() {
           {platform.platform === "windows" ? (
             <WindowsLogo className="h-11 w-11 drop-shadow-[0_0_14px_var(--primary)]" />
           ) : (
-            <Apple className="h-11 w-11 drop-shadow-[0_0_14px_var(--primary)]" />
+            <MacLogo className="h-11 w-11 drop-shadow-[0_0_14px_var(--primary)]" />
           )}
           <span className="font-display text-[10px] font-bold tracking-[0.3em] text-muted-foreground transition group-hover/platform:text-accent">
             {platform.label}
