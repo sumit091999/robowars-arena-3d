@@ -494,6 +494,7 @@ function Index() {
         {/* Dark overlay so text stays readable and blends the left edge */}
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-grid opacity-40 pointer-events-none" />
+        <div className="hero-ambient-glow" />
 
         <div className="relative max-w-7xl mx-auto px-6 grid min-[860px]:grid-cols-2 gap-8 items-center min-h-[calc(100vh-6rem)]">
           {/* Text */}

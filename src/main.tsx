@@ -20,7 +20,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           logo: <img src={robowarLogo} alt="Robowars" />,
           landingHeader: "CONNECT WALLET",
           loginMessage: "Choose a wallet to enter the arena.",
-          showWalletLoginFirst: false,
           walletList: ["detected_ethereum_wallets", "coinbase_wallet", "wallet_connect"],
         },
         loginMethods: ["wallet"],
