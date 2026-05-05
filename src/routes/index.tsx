@@ -96,22 +96,12 @@ function FooterSocialIcon({ icon }: { icon: string }) {
   );
 }
 
-function PlayGameAuthButton({ className }: { className: string }) {
+function AuthDownloadButton({ className }: { className: string }) {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { ready, authenticated } = usePrivy();
 
   if (authenticated) {
-    return (
-      <motion.a
-        whileHover={{ scale: 1.04 }}
-        whileTap={{ scale: 0.97 }}
-        href="#play"
-        className={className}
-      >
-        <Swords className="w-5 h-5" />
-        PLAY GAME
-      </motion.a>
-    );
+    return <DownloadGameButton className={className} />;
   }
 
   return (
@@ -174,6 +164,12 @@ function DownloadGameButton({ className }: { className: string }) {
 }
 
 function FooterDownloadMenu() {
+  const { authenticated } = usePrivy();
+
+  if (!authenticated) {
+    return null;
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -644,7 +640,7 @@ function Index() {
             </p>
 
             <div className="mt-10 flex flex-wrap gap-4 justify-center min-[860px]:justify-start">
-              <DownloadGameButton className="button-energy group relative inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
+              <AuthDownloadButton className="button-energy group relative inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
               <motion.a
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
@@ -794,7 +790,7 @@ function Index() {
             >
               <BookOpen className="w-5 h-5" /> GAME MANUAL
             </a>
-            <DownloadGameButton className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
+            <AuthDownloadButton className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
           </div>
         </motion.div>
       </section>
