@@ -894,7 +894,7 @@ function Index() {
             <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">
               Game
             </h3>
-            <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
+            <nav className="mt-4 flex flex-col items-center gap-3 text-sm text-muted-foreground md:items-start">
               <FooterDownloadMenu />
               <a href="#features" className="transition hover:text-primary">
                 Arenas
@@ -909,7 +909,7 @@ function Index() {
             <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">
               Resources
             </h3>
-            <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
+            <nav className="mt-4 flex flex-col items-center gap-3 text-sm text-muted-foreground md:items-start">
               <a
                 href={documentationPdf}
                 target="_blank"
@@ -931,7 +931,7 @@ function Index() {
             <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">
               Follow
             </h3>
-            <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
+            <nav className="mt-4 flex flex-col items-center gap-3 text-sm text-muted-foreground md:items-start">
               {footerSocialLinks.map((social) => (
                 <a
                   key={social.href}
