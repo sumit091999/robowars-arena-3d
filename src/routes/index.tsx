@@ -172,7 +172,11 @@ function DownloadGameButton({ className }: { className: string }) {
               download
               className="cursor-pointer gap-3 rounded-sm px-3 py-3 text-xs font-bold tracking-[0.18em] text-foreground focus:text-primary"
             >
-              <Download className="h-4 w-4 text-primary" />
+              {option.label.includes("Windows") ? (
+                <WindowsLogo className="h-5 w-5 text-primary" />
+              ) : (
+                <MacLogo className="h-5 w-5 text-primary" />
+              )}
               {option.label}
             </a>
           </DropdownMenuItem>
