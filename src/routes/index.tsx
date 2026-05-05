@@ -540,20 +540,6 @@ function Index() {
                 GAME MANUAL
               </motion.a>
             </div>
-
-            {/* Stats strip */}
-            <div className="mt-12 grid grid-cols-3 gap-6 max-w-md mx-auto min-[860px]:mx-0">
-              {[
-                { v: "24+", l: "ROBOTS" },
-                { v: "8", l: "ARENAS" },
-                { v: "4M+", l: "PLAYERS" },
-              ].map((s) => (
-                <div key={s.l} className="border-l-2 border-primary pl-3">
-                  <div className="font-display text-3xl font-black text-primary">{s.v}</div>
-                  <div className="text-[10px] tracking-[0.3em] text-muted-foreground">{s.l}</div>
-                </div>
-              ))}
-            </div>
           </motion.div>
         </div>
 
