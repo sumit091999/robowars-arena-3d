@@ -1,8 +1,20 @@
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { usePrivy } from "@privy-io/react-auth";
+import { useLoginWithEmail, useLoginWithOAuth, usePrivy } from "@privy-io/react-auth";
 import { motion, Variants, useScroll, useSpring } from "framer-motion";
-import { BookOpen, Swords, ChevronDown, Zap, Shield, Flame, Menu, X, Unplug } from "lucide-react";
+import {
+  BookOpen,
+  Swords,
+  ChevronDown,
+  Zap,
+  Shield,
+  Flame,
+  Menu,
+  X,
+  Unplug,
+  Mail,
+  Wallet,
+} from "lucide-react";
 import { RobotScene } from "@/components/RobotScene";
 import { BackgroundScene } from "@/components/BackgroundScene";
 import { FooterVoidScene } from "@/components/FooterVoidScene";
@@ -69,7 +81,8 @@ function FooterSocialIcon({ icon }: { icon: string }) {
 }
 
 function PlayGameAuthButton({ className }: { className: string }) {
-  const { ready, authenticated, login } = usePrivy();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const { ready, authenticated } = usePrivy();
 
   if (authenticated) {
     return (
@@ -86,17 +99,245 @@ function PlayGameAuthButton({ className }: { className: string }) {
   }
 
   return (
-    <motion.button
-      whileHover={{ scale: ready ? 1.04 : 1 }}
-      whileTap={{ scale: ready ? 0.97 : 1 }}
-      type="button"
-      disabled={!ready}
-      onClick={() => login()}
-      className={`${className} disabled:pointer-events-none disabled:opacity-50`}
-    >
-      <Swords className="w-5 h-5" />
-      {ready ? "LOGIN" : "LOADING"}
-    </motion.button>
+    <>
+      <motion.button
+        whileHover={{ scale: ready ? 1.04 : 1 }}
+        whileTap={{ scale: ready ? 0.97 : 1 }}
+        type="button"
+        disabled={!ready}
+        onClick={() => setIsLoginOpen(true)}
+        className={`${className} disabled:pointer-events-none disabled:opacity-50`}
+      >
+        <Swords className="w-5 h-5" />
+        {ready ? "LOGIN" : "LOADING"}
+      </motion.button>
+      <RobowarsLoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+    </>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true" className="h-8 w-8">
+      <path
+        fill="#FFC107"
+        d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.4-.4-3.5Z"
+      />
+      <path
+        fill="#FF3D00"
+        d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.6 8.3 6.3 14.7Z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44Z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.6 20.5H42V20H24v8h11.3a12 12 0 0 1-4.1 5.6l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5Z"
+      />
+    </svg>
+  );
+}
+
+function RobowarsLoginModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { login } = usePrivy();
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState<"email" | "code" | "wallet" | "google" | null>(null);
+  const { sendCode, loginWithCode } = useLoginWithEmail({
+    onComplete: onClose,
+    onError: () => {
+      setPending(null);
+      setError("Login failed. Try again.");
+    },
+  });
+  const { initOAuth, loading: googleLoading } = useLoginWithOAuth({
+    onComplete: onClose,
+    onError: () => {
+      setPending(null);
+      setError("Google login failed. Try again.");
+    },
+  });
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail("");
+      setCode("");
+      setCodeSent(false);
+      setError("");
+      setPending(null);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleEmailSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+
+    if (codeSent) {
+      if (code.trim().length < 4) {
+        setError("Enter the code from your email.");
+        return;
+      }
+
+      try {
+        setPending("code");
+        await loginWithCode({ code: code.trim() });
+      } catch {
+        setPending(null);
+        setError("That code did not work. Check it and try again.");
+      }
+      return;
+    }
+
+    if (!email.trim()) {
+      setError("Enter your email address.");
+      return;
+    }
+
+    try {
+      setPending("email");
+      await sendCode({ email: email.trim() });
+      setCodeSent(true);
+      setPending(null);
+    } catch {
+      setPending(null);
+      setError("Could not send the code. Try again.");
+    }
+  };
+
+  const handleWalletLogin = () => {
+    setPending("wallet");
+    onClose();
+    login({
+      loginMethods: ["wallet"],
+      walletChainType: "ethereum-only",
+    });
+  };
+
+  const handleGoogleLogin = async () => {
+    setError("");
+    setPending("google");
+
+    try {
+      await initOAuth({ provider: "google" });
+    } catch {
+      setPending(null);
+      setError("Could not start Google login. Try again.");
+    }
+  };
+
+  const isBusy = pending !== null || googleLoading;
+
+  return (
+    <div className="robowars-login-shell" role="presentation">
+      <button
+        className="robowars-login-backdrop"
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+      />
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="robowars-login-title"
+        initial={{ opacity: 0, scale: 0.94, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 24 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="robowars-login-panel"
+      >
+        <button className="robowars-login-close" type="button" aria-label="Close" onClick={onClose}>
+          <X className="h-6 w-6" />
+        </button>
+
+        <div className="robowars-login-logo">
+          <img src={robowarlogo} alt="Robowars" />
+        </div>
+
+        <h2 id="robowars-login-title" className="robowars-login-title">
+          SIGN IN
+        </h2>
+        <p className="robowars-login-subtitle">Email, Google, wallet, or Intraverse.</p>
+
+        <form onSubmit={handleEmailSubmit} className="robowars-login-form">
+          <label htmlFor="robowars-email" className="robowars-login-label">
+            {codeSent ? "Verification code" : "Email address"}
+          </label>
+          <div className="robowars-login-input-row">
+            <Mail className="h-6 w-6" />
+            <input
+              id="robowars-email"
+              type={codeSent ? "text" : "email"}
+              inputMode={codeSent ? "numeric" : "email"}
+              autoComplete={codeSent ? "one-time-code" : "email"}
+              value={codeSent ? code : email}
+              onChange={(event) =>
+                codeSent ? setCode(event.target.value) : setEmail(event.target.value)
+              }
+              placeholder={codeSent ? "123456" : "you@example.com"}
+            />
+          </div>
+          <button className="robowars-login-primary" type="submit" disabled={isBusy}>
+            {pending === "email"
+              ? "Sending..."
+              : pending === "code"
+                ? "Verifying..."
+                : codeSent
+                  ? "Verify code"
+                  : "Send code"}
+          </button>
+        </form>
+
+        <div className="robowars-login-divider">
+          <span>OR</span>
+        </div>
+
+        <button
+          className="robowars-login-primary robowars-login-wallet"
+          type="button"
+          disabled={isBusy}
+          onClick={handleWalletLogin}
+        >
+          <Wallet className="h-5 w-5" />
+          {pending === "wallet" ? "Opening wallet..." : "CONNECT WALLET"}
+        </button>
+
+        <button
+          className="robowars-login-google"
+          type="button"
+          disabled={isBusy}
+          onClick={handleGoogleLogin}
+        >
+          <span className="robowars-login-google-mark">
+            <GoogleMark />
+          </span>
+          <span>{pending === "google" || googleLoading ? "OPENING GOOGLE..." : "GOOGLE"}</span>
+        </button>
+
+        {error && <p className="robowars-login-error">{error}</p>}
+      </motion.div>
+    </div>
   );
 }
 
@@ -126,6 +367,7 @@ function DisconnectButton({ onComplete }: { onComplete?: () => void }) {
 
 function Index() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { authenticated } = usePrivy();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -550,9 +792,11 @@ function Index() {
               Game
             </h3>
             <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
-              <a href="#play" className="transition hover:text-primary">
-                Play Game
-              </a>
+              {authenticated && (
+                <a href="#play" className="transition hover:text-primary">
+                  Play Game
+                </a>
+              )}
               <a href="#features" className="transition hover:text-primary">
                 Arenas
               </a>
@@ -578,13 +822,8 @@ function Index() {
               <a href="#manual" className="transition hover:text-primary">
                 Fight Brief
               </a>
-              <a
-                href="https://www.kult.games/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition hover:text-primary"
-              >
-                Kult Games
+              <a href="#" className="transition hover:text-primary">
+                Home
               </a>
             </nav>
           </motion.div>
@@ -619,7 +858,7 @@ function Index() {
           <span className="font-display tracking-[0.25em]">
             © 2026 Robo Wars — All Systems Armed
           </span>
-          <img src={kultLogo} alt="KULT GAMES" className="h-7 w-auto object-contain opacity-80" />
+          <img src={kultLogo} alt="KULT GAMES" className="h-8 w-auto object-contain opacity-85" />
         </motion.div>
       </footer>
     </main>
