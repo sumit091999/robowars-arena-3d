@@ -72,19 +72,6 @@ const downloadOptions = [
     href: "https://github.com/sumit091999/robowars-arena-3d/releases/latest/download/Robowars-windows.exe",
   },
 ];
-const platformDownloadLinks = [
-  {
-    label: "WINDOWS",
-    href: downloadOptions[1].href,
-    platform: "windows",
-  },
-  {
-    label: "MAC",
-    href: downloadOptions[0].href,
-    platform: "mac",
-  },
-];
-
 function FooterSocialIcon({ icon }: { icon: string }) {
   if (icon === "discord") {
     return (
@@ -205,33 +192,6 @@ function MacLogo({ className }: { className?: string }) {
         d="M15.66 2c.12 1.02-.28 2.03-.89 2.76-.65.77-1.75 1.37-2.75 1.3-.15-.98.34-2.03.93-2.7C13.64 2.58 14.78 2.05 15.66 2Zm4.26 15.32c-.47 1.07-.69 1.55-1.3 2.5-.85 1.31-2.04 2.95-3.52 2.97-.76.01-1.28-.21-1.82-.43-.57-.24-1.16-.48-2.09-.48-.98 0-1.6.25-2.19.49-.52.21-1.03.42-1.73.45-1.4.05-2.47-1.42-3.32-2.72-1.86-2.84-3.29-8.02-1.38-11.53.95-1.74 2.64-2.84 4.48-2.87.81-.02 1.58.27 2.26.52.52.19.98.36 1.34.36.32 0 .77-.17 1.29-.37.82-.31 1.82-.69 2.85-.59.7.03 2.68.28 3.94 2.15-.1.06-2.36 1.38-2.34 4.11.03 3.25 2.82 4.32 2.85 4.34-.02.07-.08.26-.32.8Z"
       />
     </svg>
-  );
-}
-
-function PlatformDownloadIcons() {
-  return (
-    <div className="mt-12 grid grid-cols-2 gap-8 max-w-xs mx-auto min-[860px]:mx-0">
-      {platformDownloadLinks.map((platform) => (
-        <motion.a
-          key={platform.label}
-          whileHover={{ scale: 1.05, x: 3 }}
-          whileTap={{ scale: 0.98 }}
-          href={platform.href}
-          download
-          aria-label={`Download Robowars for ${platform.label.toLowerCase()}`}
-          className="group/platform flex items-center gap-4 border-l-2 border-primary pl-4 text-primary transition hover:text-accent"
-        >
-          {platform.platform === "windows" ? (
-            <WindowsLogo className="h-11 w-11 drop-shadow-[0_0_14px_var(--primary)]" />
-          ) : (
-            <MacLogo className="h-11 w-11 drop-shadow-[0_0_14px_var(--primary)]" />
-          )}
-          <span className="font-display text-[10px] font-bold tracking-[0.3em] text-muted-foreground transition group-hover/platform:text-accent">
-            {platform.label}
-          </span>
-        </motion.a>
-      ))}
-    </div>
   );
 }
 
@@ -660,7 +620,6 @@ function Index() {
                 GAME MANUAL
               </motion.a>
             </div>
-            <PlatformDownloadIcons />
           </motion.div>
         </div>
 
