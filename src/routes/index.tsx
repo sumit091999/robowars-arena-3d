@@ -30,7 +30,11 @@ const staggerGroup: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.12, delayChildren: 0.08 } },
 };
-const hudStatuses = ["SYSTEM ONLINE", "ARENA LIVE", "MATCHMAKING READY"];
+const footerSocialLinks = [
+  { label: "X (Twitter)", href: "https://x.com/_KultGames", icon: "x" },
+  { label: "Discord", href: "https://discord.com/invite/Cge7rrCyUB", icon: "discord" },
+  { label: "Telegram", href: "https://t.me/KultGamesOfficial", icon: "telegram" },
+];
 const combatFeed = [
   "BOT-07 ELIMINATED",
   "ARENA CORE ACTIVE",
@@ -38,6 +42,30 @@ const combatFeed = [
   "SPINNER DAMAGE CRITICAL",
   "PIT HAZARDS ARMED",
 ];
+
+function FooterSocialIcon({ icon }: { icon: string }) {
+  if (icon === "discord") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 fill-current">
+        <path d="M19.62 5.26a15.7 15.7 0 0 0-3.87-1.2.08.08 0 0 0-.09.04c-.17.3-.36.7-.49 1.02a14.56 14.56 0 0 0-4.34 0c-.13-.33-.32-.72-.5-1.02a.08.08 0 0 0-.09-.04 15.65 15.65 0 0 0-3.87 1.2.07.07 0 0 0-.03.03C3.9 8.92 3.23 12.46 3.56 15.95c0 .02.01.04.03.05a15.8 15.8 0 0 0 4.75 2.4.08.08 0 0 0 .1-.03c.36-.5.69-1.02.97-1.57a.08.08 0 0 0-.04-.11 10.4 10.4 0 0 1-1.48-.7.08.08 0 0 1 0-.13l.29-.22a.07.07 0 0 1 .08 0c3.12 1.42 6.48 1.42 9.56 0a.07.07 0 0 1 .08 0l.29.22a.08.08 0 0 1 0 .13c-.47.27-.96.51-1.48.7a.08.08 0 0 0-.04.11c.29.55.61 1.07.97 1.57a.08.08 0 0 0 .1.03 15.76 15.76 0 0 0 4.76-2.4.08.08 0 0 0 .03-.05c.39-4.03-.66-7.55-2.82-10.66a.06.06 0 0 0-.04-.03ZM9.69 13.82c-.94 0-1.71-.86-1.71-1.91s.75-1.91 1.71-1.91c.97 0 1.73.86 1.71 1.91 0 1.05-.75 1.91-1.71 1.91Zm4.64 0c-.94 0-1.71-.86-1.71-1.91s.75-1.91 1.71-1.91c.97 0 1.73.86 1.71 1.91 0 1.05-.75 1.91-1.71 1.91Z" />
+      </svg>
+    );
+  }
+
+  if (icon === "telegram") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 fill-current">
+        <path d="M21.94 4.66a1.53 1.53 0 0 0-1.64-.24L3.57 10.84c-.73.29-1.2.86-1.17 1.48.04.62.57 1.12 1.34 1.33l4.17 1.13 1.6 5.05c.2.63.64 1.03 1.17 1.08.52.05.99-.25 1.31-.8l2.2-3.64 4.14 3.04c.53.39 1.1.48 1.57.25.47-.23.78-.73.87-1.39l2.17-12.29c.12-.68-.09-1.22-.5-1.48Zm-3.38 3.04-7.2 6.59a.74.74 0 0 0-.23.43l-.43 2.65-.95-3.02 8.8-6.65Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 fill-current">
+      <path d="M13.92 10.47 21.41 2h-1.78l-6.5 7.35L7.94 2H1.95l7.86 11.12L1.95 22h1.78l6.87-7.76L16.08 22h5.99l-8.15-11.53Zm-2.43 2.75-.8-1.1L4.36 3.3h2.73l5.1 7.1.8 1.1 6.65 9.26h-2.73l-5.42-7.54Z" />
+    </svg>
+  );
+}
 
 function Index() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -363,14 +391,20 @@ function Index() {
             <p className="mx-auto mt-5 max-w-sm text-md leading-relaxed text-muted-foreground md:mx-0">
               Build your machine, enter the arena, and fight through a neon battleground powered by Kult Games.
             </p>
-            <div className="mt-6 flex flex-col items-center gap-2 md:items-start">
-              {hudStatuses.map((status) => (
-                <span key={status} className="inline-flex items-center gap-2 font-display text-[10px] tracking-[0.28em] text-accent">
-                  <span className="hud-status-dot" />
-                  {status}
-                </span>
+            <nav className="mt-5 flex items-center justify-center gap-2.5 md:justify-start">
+              {footerSocialLinks.map((social) => (
+                <a
+                  key={social.href}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className="group grid h-8 w-8 place-items-center rounded-full border border-primary/60 bg-secondary/70 text-accent shadow-[0_0_0_1px_oklch(0.65_0.27_5_/_0.24),inset_0_0_14px_oklch(0.65_0.27_5_/_0.16)] transition-all duration-300 hover:border-accent hover:bg-primary/15 hover:text-foreground hover:shadow-[0_0_12px_oklch(0.78_0.18_200_/_0.38),inset_0_0_18px_oklch(0.78_0.18_200_/_0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <FooterSocialIcon icon={social.icon} />
+                </a>
               ))}
-            </div>
+            </nav>
             {/* <img src={kultLogo} alt="KULT GAMES" className="mt-6 h-7 w-auto object-contain opacity-80" /> */}
           </motion.div>
 
@@ -395,16 +429,20 @@ function Index() {
           <motion.div variants={fadeUp}>
             <h3 className="font-display text-sm font-black uppercase tracking-[0.25em] text-foreground">Follow</h3>
             <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
-              {["X (Twitter)", "Discord", "Telegram"].map((social) => (
-                <span
-                  key={social}
+              {footerSocialLinks.map((social) => (
+                <a
+                  key={social.href}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="transition-all duration-300 hover:text-accent hover:[text-shadow:0_0_14px_var(--accent)]"
                 >
-                  {social}
-                </span>
+                  {social.label}
+                </a>
               ))}
             </nav>
           </motion.div>
+
         </motion.div>
 
         <motion.div
