@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useLoginWithEmail, useLoginWithOAuth, usePrivy } from "@privy-io/react-auth";
 import { motion, Variants, useScroll, useSpring } from "framer-motion";
 import {
+  Apple,
   BookOpen,
   Swords,
   ChevronDown,
@@ -70,6 +71,18 @@ const downloadOptions = [
   {
     label: "Download for Windows",
     href: "https://github.com/sumit091999/robowars-arena-3d/releases/latest/download/Robowars-windows.exe",
+  },
+];
+const platformDownloadLinks = [
+  {
+    label: "WINDOWS",
+    href: downloadOptions[1].href,
+    platform: "windows",
+  },
+  {
+    label: "MAC",
+    href: downloadOptions[0].href,
+    platform: "mac",
   },
 ];
 
@@ -167,6 +180,44 @@ function DownloadGameButton({ className }: { className: string }) {
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function WindowsLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path
+        fill="currentColor"
+        d="M3 4.4 10.8 3v8.3H3V4.4Zm9.2-1.6L21 1.2v10.1h-8.8V2.8ZM3 12.7h7.8V21L3 19.6v-6.9Zm9.2 0H21v10.1l-8.8-1.6v-8.5Z"
+      />
+    </svg>
+  );
+}
+
+function PlatformDownloadIcons() {
+  return (
+    <div className="mt-12 grid grid-cols-2 gap-8 max-w-xs mx-auto min-[860px]:mx-0">
+      {platformDownloadLinks.map((platform) => (
+        <motion.a
+          key={platform.label}
+          whileHover={{ scale: 1.05, x: 3 }}
+          whileTap={{ scale: 0.98 }}
+          href={platform.href}
+          download
+          aria-label={`Download Robowars for ${platform.label.toLowerCase()}`}
+          className="group/platform flex items-center gap-4 border-l-2 border-primary pl-4 text-primary transition hover:text-accent"
+        >
+          {platform.platform === "windows" ? (
+            <WindowsLogo className="h-11 w-11 drop-shadow-[0_0_14px_var(--primary)]" />
+          ) : (
+            <Apple className="h-11 w-11 drop-shadow-[0_0_14px_var(--primary)]" />
+          )}
+          <span className="font-display text-[10px] font-bold tracking-[0.3em] text-muted-foreground transition group-hover/platform:text-accent">
+            {platform.label}
+          </span>
+        </motion.a>
+      ))}
+    </div>
   );
 }
 
@@ -595,6 +646,7 @@ function Index() {
                 GAME MANUAL
               </motion.a>
             </div>
+            <PlatformDownloadIcons />
           </motion.div>
         </div>
 
