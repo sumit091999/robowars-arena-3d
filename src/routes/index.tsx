@@ -3,10 +3,20 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useLoginWithEmail, useLoginWithOAuth, usePrivy } from "@privy-io/react-auth";
 import { motion, Variants, useScroll, useSpring } from "framer-motion";
 import {
+  Activity,
+  BrainCircuit,
   BookOpen,
-  Swords,
   ChevronDown,
+  CircleDot,
+  Cpu,
+  Crosshair,
+  Database,
   Download,
+  Eye,
+  Hash,
+  Lock,
+  RadioTower,
+  Swords,
   Zap,
   Shield,
   Flame,
@@ -16,6 +26,7 @@ import {
   Mail,
   Wallet,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { RobotScene } from "@/components/RobotScene";
 import { BackgroundScene } from "@/components/BackgroundScene";
 import { FooterVoidScene } from "@/components/FooterVoidScene";
@@ -32,6 +43,7 @@ import documentationPdf from "@/assets/Documentation.pdf";
 import gameImg1 from "@/assets/ChatGPT Image May 4, 2026, 07_03_40 PM.png";
 import gameImg2 from "@/assets/ChatGPT Image May 4, 2026, 06_49_39 PM.png";
 import gameImg3 from "@/assets/ChatGPT Image May 4, 2026, 06_51_51 PM.png";
+import battleRobotImg from "@/assets/hero-robot.png";
 import heroImg from "@/assets/Background 3.png";
 import kultLogo from "@/assets/kult-0G-logo.png";
 import roboLogo from "@/assets/Robo-logo.png";
@@ -62,6 +74,71 @@ const combatFeed = [
   "SPINNER DAMAGE CRITICAL",
   "PIT HAZARDS ARMED",
 ];
+const systemSignals = [
+  { icon: BrainCircuit, label: "AI-powered combat analysis" },
+  { icon: Database, label: "Battle data recorded" },
+  { icon: Lock, label: "0G state reference" },
+];
+const infraStatus = [
+  {
+    icon: RadioTower,
+    label: "0G DA",
+    status: "LIVE",
+    detail: "Match inputs published",
+  },
+  {
+    icon: Database,
+    label: "0G Storage",
+    status: "PINNED",
+    detail: "Replay state secured",
+  },
+  {
+    icon: Cpu,
+    label: "0G Compute",
+    status: "READY",
+    detail: "AI inference queued",
+  },
+];
+const aiDecisionFeed = [
+  "Dragon Thrower reads front wedge armor",
+  "WASD drive path mapped for arena entry",
+  "E attack arm timing window: 0.8s",
+  "R flip recovery ready after rollover",
+  "Result data prepared for battle report",
+];
+const recommendationCards = [
+  {
+    title: "Route",
+    value: "WASD drive",
+    desc: "Forward, reverse, and turn control from the manual.",
+  },
+  {
+    title: "Weapon",
+    value: "E attack arm",
+    desc: "Toggle the attack arm on or off for the strike window.",
+  },
+  {
+    title: "Defense",
+    value: "R flip recovery",
+    desc: "Recover the robot when it rolls or gets overturned.",
+  },
+];
+const verificationSteps = [
+  "Match setup captured",
+  "WASD movement state sampled",
+  "E attack arm input summarized",
+  "R flip recovery state saved",
+  "Result report generated",
+];
+const manualControls = [
+  { key: "W", action: "Forward" },
+  { key: "S", action: "Backward" },
+  { key: "A", action: "Turn Left" },
+  { key: "D", action: "Turn Right" },
+  { key: "E", action: "Attack Arm On/Off" },
+  { key: "R", action: "Flip The Robot" },
+];
+const reportId = "RW-AI-0G-472";
 const downloadOptions = [
   {
     label: "Download for Mac",
@@ -478,6 +555,303 @@ function DisconnectButton({ onComplete }: { onComplete?: () => void }) {
   );
 }
 
+function SignalBadge({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-2 border border-accent/35 bg-background/55 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-accent backdrop-blur clip-blade">
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </span>
+  );
+}
+
+function InfrastructureStrip() {
+  return (
+    <div className="grid gap-3 md:grid-cols-3">
+      {infraStatus.map((item) => (
+        <div
+          key={item.label}
+          className="group relative overflow-hidden border border-accent/25 bg-background/70 p-4 backdrop-blur clip-blade transition hover:border-accent/70 hover:shadow-cyan"
+        >
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent to-transparent opacity-70" />
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center border border-primary/45 bg-primary/10 text-primary clip-blade">
+                <item.icon className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="font-display text-sm font-black uppercase tracking-[0.18em]">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-xs font-semibold text-muted-foreground">{item.detail}</p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-display font-black tracking-[0.16em] text-accent">
+              <span className="hud-status-dot" />
+              {item.status}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BattleInfoModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[180] grid place-items-center p-4">
+      <button
+        type="button"
+        aria-label="Close battle information"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/78 backdrop-blur-md"
+      />
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="battle-info-title"
+        initial={{ opacity: 0, scale: 0.94, y: 18 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+        className="relative w-full max-w-2xl overflow-hidden border border-accent/45 bg-background/95 p-6 shadow-cyan clip-blade"
+      >
+        <button
+          type="button"
+          aria-label="Close battle information"
+          onClick={onClose}
+          className="absolute right-5 top-5 grid h-9 w-9 place-items-center rounded-full border border-primary/50 bg-secondary/70 text-foreground transition hover:border-accent hover:text-accent"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <span className="inline-flex items-center gap-2 text-xs font-display font-bold uppercase tracking-[0.28em] text-accent">
+          <Activity className="h-4 w-4" />
+          Battle Information
+        </span>
+        <h3 id="battle-info-title" className="mt-3 font-display text-3xl font-black">
+          SYSTEM DATA PANEL
+        </h3>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div className="border border-primary/25 bg-card/45 p-4 clip-blade">
+            <p className="text-xs font-display uppercase tracking-[0.22em] text-muted-foreground">
+              Report ID
+            </p>
+            <p className="mt-2 flex items-center gap-2 font-display text-xl text-accent">
+              <Hash className="h-5 w-5" />
+              {reportId}
+            </p>
+          </div>
+          <div className="border border-primary/25 bg-card/45 p-4 clip-blade">
+            <p className="text-xs font-display uppercase tracking-[0.22em] text-muted-foreground">
+              Data source
+            </p>
+            <p className="mt-2 flex items-center gap-2 font-display text-xl text-primary">
+              <BookOpen className="h-5 w-5" />
+              ROBOWARS GAME
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          {manualControls.map((control) => (
+            <div
+              key={control.key}
+              className="border border-accent/25 bg-background/60 p-3 clip-blade"
+            >
+              <span className="grid h-8 w-8 place-items-center border border-primary/60 bg-primary/15 font-display text-sm font-black text-primary">
+                {control.key}
+              </span>
+              <p className="mt-2 text-xs font-display font-black uppercase tracking-[0.16em] text-foreground">
+                {control.action}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 space-y-3">
+          {verificationSteps.map((step, index) => (
+            <div key={step} className="flex items-center gap-3 text-sm">
+              <span className="grid h-7 w-7 place-items-center border border-accent/50 bg-accent/10 text-accent clip-blade">
+                <CircleDot className="h-4 w-4" />
+              </span>
+              <span className="font-semibold text-foreground">{step}</span>
+              <span className="ml-auto font-display text-[10px] tracking-[0.2em] text-muted-foreground">
+                STEP {index + 1}
+              </span>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function BattleSystemSection() {
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const playerAiName = "Dragon Thrower";
+
+  const matchSummary = [
+    { label: "Mode", value: "AI Skirmish" },
+    { label: "Arena", value: "Neon Pit" },
+    { label: "AI Unit", value: playerAiName },
+    { label: "Manual", value: "WASD + E/R" },
+  ];
+
+  return (
+    <>
+      <section
+        id="battle-system"
+        className="relative overflow-hidden border-y border-primary/20 bg-background px-6 py-24"
+      >
+        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background pointer-events-none" />
+        <div className="relative mx-auto max-w-7xl">
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="show"
+            viewport={revealViewport}
+            className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between"
+          >
+            <div>
+              <span className="inline-flex items-center gap-2 text-sm font-display tracking-[0.3em] text-accent">
+                <BrainCircuit className="h-4 w-4" />
+                INTELLIGENT GAME SYSTEM
+              </span>
+              <h2 className="mt-3 max-w-3xl font-display text-5xl font-black leading-none md:text-7xl">
+                AI COMBAT,
+                <br />
+                <span className="text-primary">0G DATA</span>
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-2 md:justify-end">
+              {systemSignals.map((signal) => (
+                <SignalBadge key={signal.label} icon={signal.icon} label={signal.label} />
+              ))}
+            </div>
+          </motion.div>
+
+          <InfrastructureStrip />
+
+          <div className="mt-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+            <motion.div
+              variants={fadeUp}
+              initial="hidden"
+              whileInView="show"
+              viewport={revealViewport}
+              className="relative overflow-hidden border border-primary/30 bg-card/45 p-5 backdrop-blur clip-blade"
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.65_0.27_5_/_0.14),transparent_62%)] pointer-events-none" />
+              <div className="absolute inset-0 scanline opacity-45 pointer-events-none" />
+
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-2 border border-accent/40 bg-accent/10 px-3 py-2 font-display text-xs font-black tracking-[0.2em] text-accent clip-blade">
+                  <Activity className="h-4 w-4" />
+                  BATTLE BRIEF
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsInfoOpen(true)}
+                  className="button-energy relative inline-flex items-center gap-2 overflow-hidden border border-accent/60 px-4 py-2 font-display text-xs font-black tracking-[0.18em] text-accent clip-blade transition hover:bg-accent/10"
+                >
+                  <Eye className="h-4 w-4" />
+                  VIEW DETAILS
+                </button>
+              </div>
+
+              <div className="relative z-10 mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {matchSummary.map((item) => (
+                  <div
+                    key={item.label}
+                    className="border border-accent/20 bg-background/50 p-3 clip-blade"
+                  >
+                    <p className="font-display text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                      {item.label}
+                    </p>
+                    <p className="mt-1 font-display text-sm font-black text-foreground">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="relative z-10 mt-6 overflow-hidden p-4">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.78_0.18_200_/_0.12),transparent_65%)] pointer-events-none" />
+                <motion.img
+                  whileHover={{ y: -18, scale: 1.03 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                  src={battleRobotImg}
+                  alt="Dragon Thrower combat robot"
+                  className="relative mx-auto max-h-[360px] w-full cursor-pointer object-contain drop-shadow-[0_0_28px_oklch(0.65_0.27_5_/_0.28)]"
+                />
+              </div>
+            </motion.div>
+
+            <motion.div
+              variants={staggerGroup}
+              initial="hidden"
+              whileInView="show"
+              viewport={revealViewport}
+              className="grid gap-5"
+            >
+              <motion.div
+                variants={fadeUp}
+                className="border border-accent/25 bg-card/55 p-5 clip-blade"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-display text-xl font-black">AI COMBAT ANALYSIS</h3>
+                  <Activity className="h-5 w-5 text-accent" />
+                </div>
+                <div className="mt-5 space-y-3">
+                  {aiDecisionFeed.map((item, index) => (
+                    <div key={item} className="flex items-center gap-3 text-sm">
+                      <span className="grid h-6 w-6 place-items-center border border-accent/40 bg-accent/10 text-accent clip-blade">
+                        <CircleDot className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="font-semibold text-muted-foreground">{item}</span>
+                      <span className="ml-auto font-display text-[10px] tracking-[0.2em] text-accent/80">
+                        0{index + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+
+              <motion.div variants={fadeUp} className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                {recommendationCards.map((item) => (
+                  <div
+                    key={item.title}
+                    className="border border-primary/25 bg-background/65 p-4 transition hover:border-primary/65 hover:bg-primary/10 clip-blade"
+                  >
+                    <div className="flex items-center gap-2 text-primary">
+                      <Crosshair className="h-4 w-4" />
+                      <span className="font-display text-[10px] font-black uppercase tracking-[0.22em]">
+                        {item.title}
+                      </span>
+                    </div>
+                    <p className="mt-2 font-display text-lg font-black">{item.value}</p>
+                    <p className="mt-1 text-xs font-semibold text-muted-foreground">{item.desc}</p>
+                  </div>
+                ))}
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+      <BattleInfoModal isOpen={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
+    </>
+  );
+}
+
 function Index() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { scrollYProgress } = useScroll();
@@ -638,6 +1012,11 @@ function Index() {
               built to destroy. Only one rolls out.{" "}
               <span className="text-foreground">Will it be yours?</span>
             </p>
+            <div className="mt-6 flex flex-wrap gap-2 justify-center min-[860px]:justify-start">
+              {systemSignals.map((signal) => (
+                <SignalBadge key={signal.label} icon={signal.icon} label={signal.label} />
+              ))}
+            </div>
 
             <div className="mt-10 flex flex-wrap gap-4 justify-center min-[860px]:justify-start">
               <AuthDownloadButton className="button-energy group relative inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
@@ -691,6 +1070,11 @@ function Index() {
           ))}
         </div>
       </section>
+
+      <BattleSystemSection />
+
+      {/* TRAILER */}
+      <TrailerSection />
 
       {/* FEATURES */}
       <section
@@ -756,9 +1140,6 @@ function Index() {
         </div>
       </section>
 
-      {/* TRAILER */}
-      <TrailerSection />
-
       {/* MANUAL / CTA */}
       <section
         id="manual"
@@ -779,8 +1160,23 @@ function Index() {
             READY TO <span className="text-primary">FIGHT?</span>
           </h2>
           <p className="relative mt-4 text-muted-foreground max-w-xl mx-auto">
-            Read the manual. Pick your weapon. Step into the pit.
+            Drive with WASD, toggle the attack arm with E, and recover with R when the robot flips.
           </p>
+          <div className="relative mx-auto mt-8 grid max-w-3xl gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {manualControls.map((control) => (
+              <div
+                key={control.key}
+                className="border border-accent/30 bg-background/70 p-3 text-left backdrop-blur clip-blade"
+              >
+                <span className="grid h-9 w-9 place-items-center border border-primary/70 bg-primary/15 font-display text-sm font-black text-primary">
+                  {control.key}
+                </span>
+                <p className="mt-3 text-[10px] font-display font-black uppercase tracking-[0.14em] text-foreground">
+                  {control.action}
+                </p>
+              </div>
+            ))}
+          </div>
           <div className="relative mt-10 flex flex-wrap justify-center gap-4" id="play">
             <a
               href={documentationPdf}
