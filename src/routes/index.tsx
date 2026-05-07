@@ -43,6 +43,7 @@ import documentationPdf from "@/assets/Documentation.pdf";
 import gameImg1 from "@/assets/ChatGPT Image May 4, 2026, 07_03_40 PM.png";
 import gameImg2 from "@/assets/ChatGPT Image May 4, 2026, 06_49_39 PM.png";
 import gameImg3 from "@/assets/ChatGPT Image May 4, 2026, 06_51_51 PM.png";
+import aiCombatBg from "@/assets/ChatGPT Image May 4, 2026, 10_29_48 PM.png";
 import battleRobotImg from "@/assets/hero-robot.png";
 import heroImg from "@/assets/Background 3.png";
 import kultLogo from "@/assets/kult-0G-logo.png";
@@ -743,10 +744,11 @@ function BattleSystemSection() {
     <>
       <section
         id="battle-system"
-        className="relative overflow-hidden border-y border-primary/20 bg-background px-6 py-24"
+        className="relative overflow-hidden border-y border-primary/20 bg-background bg-cover bg-center bg-no-repeat px-6 py-24"
+        style={{ backgroundImage: `url(${aiCombatBg})` }}
       >
         <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/65 to-background/90 pointer-events-none" />
         <div className="relative mx-auto max-w-7xl">
           <motion.div
             variants={fadeUp}
