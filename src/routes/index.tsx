@@ -139,16 +139,24 @@ const manualControls = [
   { key: "R", action: "Flip The Robot" },
 ];
 const reportId = "RW-AI-0G-472";
+const windowsDownloadUrl =
+  import.meta.env.VITE_WINDOWS_DOWNLOAD_URL ??
+  "https://game-build.sfo3.cdn.digitaloceanspaces.com/Robowars.zip";
+type DownloadOption = {
+  label: string;
+  href?: string;
+  disabled?: boolean;
+};
 const downloadOptions = [
   {
     label: "Download for Mac",
-    href: "https://github.com/sumit091999/robowars-arena-3d/releases/latest/download/Robowars-mac.dmg",
+    disabled: true,
   },
   {
     label: "Download for Windows",
-    href: "https://github.com/sumit091999/robowars-arena-3d/releases/latest/download/Robowars-windows.exe",
+    href: windowsDownloadUrl,
   },
-];
+] satisfies DownloadOption[];
 function FooterSocialIcon({ icon }: { icon: string }) {
   if (icon === "discord") {
     return (
@@ -200,6 +208,9 @@ function AuthDownloadButton({ className }: { className: string }) {
 }
 
 function DownloadGameButton({ className }: { className: string }) {
+  const itemClassName =
+    "gap-3 rounded-sm px-3 py-3 text-xs font-bold tracking-[0.18em] text-foreground focus:text-primary";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -220,28 +231,56 @@ function DownloadGameButton({ className }: { className: string }) {
         className="min-w-56 border-primary/35 bg-background/95 p-2 font-display shadow-glow backdrop-blur"
       >
         {downloadOptions.map((option) => (
-          <DropdownMenuItem key={option.label} asChild>
-            <a
-              href={option.href}
-              download
-              className="cursor-pointer gap-3 rounded-sm px-3 py-3 text-xs font-bold tracking-[0.18em] text-foreground focus:text-primary"
-            >
-              {option.label.includes("Windows") ? (
-                <WindowsLogo className="h-5 w-5 text-primary" />
-              ) : (
-                <MacLogo className="h-5 w-5 text-primary" />
-              )}
-              {option.label}
-            </a>
-          </DropdownMenuItem>
+          <DownloadMenuOption
+            key={option.label}
+            option={option}
+            iconClassName="h-5 w-5 text-primary"
+            className={itemClassName}
+          />
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
+function DownloadMenuOption({
+  option,
+  iconClassName,
+  className,
+}: {
+  option: DownloadOption;
+  iconClassName: string;
+  className: string;
+}) {
+  const icon = option.label.includes("Windows") ? (
+    <WindowsLogo className={iconClassName} />
+  ) : (
+    <MacLogo className={iconClassName} />
+  );
+
+  if (option.disabled) {
+    return (
+      <DropdownMenuItem disabled className={className}>
+        {icon}
+        {option.label}
+      </DropdownMenuItem>
+    );
+  }
+
+  return (
+    <DropdownMenuItem asChild>
+      <a href={option.href} download className={`cursor-pointer ${className}`}>
+        {icon}
+        {option.label}
+      </a>
+    </DropdownMenuItem>
+  );
+}
+
 function FooterDownloadMenu() {
   const { authenticated } = usePrivy();
+  const itemClassName =
+    "gap-3 rounded-sm px-3 py-3 text-xs font-bold tracking-[0.16em] text-foreground focus:text-primary";
 
   if (!authenticated) {
     return null;
@@ -264,20 +303,12 @@ function FooterDownloadMenu() {
         className="min-w-52 border-primary/35 bg-background/95 p-2 font-display shadow-glow backdrop-blur"
       >
         {downloadOptions.map((option) => (
-          <DropdownMenuItem key={option.label} asChild>
-            <a
-              href={option.href}
-              download
-              className="cursor-pointer gap-3 rounded-sm px-3 py-3 text-xs font-bold tracking-[0.16em] text-foreground focus:text-primary"
-            >
-              {option.label.includes("Windows") ? (
-                <WindowsLogo className="h-4 w-4 text-primary" />
-              ) : (
-                <MacLogo className="h-4 w-4 text-primary" />
-              )}
-              {option.label}
-            </a>
-          </DropdownMenuItem>
+          <DownloadMenuOption
+            key={option.label}
+            option={option}
+            iconClassName="h-4 w-4 text-primary"
+            className={itemClassName}
+          />
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
