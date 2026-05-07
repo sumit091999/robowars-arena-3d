@@ -139,6 +139,7 @@ const manualControls = [
   { key: "R", action: "Flip The Robot" },
 ];
 const reportId = "RW-AI-0G-472";
+const macDownloadUrl = import.meta.env.VITE_MAC_DOWNLOAD_URL;
 const windowsDownloadUrl =
   import.meta.env.VITE_WINDOWS_DOWNLOAD_URL ??
   "https://game-build.sfo3.cdn.digitaloceanspaces.com/Robowars.zip";
@@ -150,7 +151,8 @@ type DownloadOption = {
 const downloadOptions = [
   {
     label: "Download for Mac",
-    disabled: true,
+    href: macDownloadUrl,
+    disabled: !macDownloadUrl,
   },
   {
     label: "Download for Windows",
