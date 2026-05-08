@@ -1,7 +1,17 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, type FormEvent } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { useLoginWithEmail, useLoginWithOAuth, usePrivy } from "@privy-io/react-auth";
-import type { LinkedAccountWithMetadata, User as PrivyUser } from "@privy-io/react-auth";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  useLoginWithEmail,
+  useLoginWithOAuth,
+  usePrivy,
+  useSignMessage,
+  useWallets,
+} from "@privy-io/react-auth";
+import type {
+  ConnectedWallet,
+  LinkedAccountWithMetadata,
+  User as PrivyUser,
+} from "@privy-io/react-auth";
 import { motion, Variants, useScroll, useSpring } from "framer-motion";
 import {
   Activity,
@@ -13,7 +23,6 @@ import {
   Crosshair,
   Database,
   Download,
-  Eye,
   ExternalLink,
   Lock,
   RadioTower,
@@ -27,6 +36,8 @@ import {
   Mail,
   Monitor,
   Wallet,
+  RefreshCw,
+  Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { RobotScene } from "@/components/RobotScene";
@@ -139,6 +150,8 @@ const windowsDownloadUrl =
   import.meta.env.VITE_WINDOWS_DOWNLOAD_URL ??
   "https://game-build.sfo3.cdn.digitaloceanspaces.com/Robowars.zip";
 const robowarBackendUrl = (import.meta.env.VITE_ROBOWAR_BACKEND_URL ?? "").replace(/\/$/, "");
+const zeroGBackendUrl = (import.meta.env.VITE_ZG_BACKEND ?? "").replace(/\/$/, "");
+const zeroGJwtStoragePrefix = "robowars:zg-jwt:";
 type DownloadOption = {
   label: string;
   href?: string;
@@ -170,7 +183,205 @@ type RobowarTransactionHistoryResponse = {
     explorerUrl?: string;
   };
 };
+type ZeroGLogLevel = "info" | "success" | "error";
+type ZeroGLogEntry = {
+  id: string;
+  time: string;
+  level: ZeroGLogLevel;
+  message: string;
+};
+type ZeroGNetworkService = {
+  label?: string;
+  status?: string;
+  latencyMs?: number;
+  endpoint?: string;
+  blockNumber?: number;
+};
+type ZeroGNetworkResponse = {
+  timestamp?: string;
+  overall?: string;
+  services?: Record<string, ZeroGNetworkService>;
+};
+type ZeroGTrustScore = {
+  score?: number;
+  label?: string;
+  description?: string;
+};
+type ZeroGDashboardResponse = {
+  wallet?: string;
+  summary?: {
+    totalSaves?: number;
+    finalizedSaves?: number;
+    anchoredSaves?: number;
+    totalDataStored?: string;
+  };
+  trustScore?: ZeroGTrustScore;
+};
+type ZeroGActivityEvent = {
+  id?: string;
+  type?: string;
+  title?: string;
+  description?: string;
+  status?: string;
+  timestamp?: string;
+  explorerUrl?: string | null;
+};
+type ZeroGActivityResponse = {
+  events?: ZeroGActivityEvent[];
+};
+type ZeroGNonceResponse = {
+  nonce?: string;
+  message?: string;
+};
+type ZeroGLoginResponse = {
+  token?: string;
+  expiresIn?: number;
+};
+type ZeroGStoredSession = {
+  token: string;
+  expiresAt: number;
+};
 const robowarSyncInFlightUserKeys = new Set<string>();
+
+function nowLogTime() {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date());
+}
+
+function zeroGSessionKey(walletAddress: string) {
+  return `${zeroGJwtStoragePrefix}${walletAddress.toLowerCase()}`;
+}
+
+function getStoredZeroGSession(walletAddress: string) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const stored = window.localStorage.getItem(zeroGSessionKey(walletAddress));
+    if (!stored) {
+      return null;
+    }
+
+    const session = JSON.parse(stored) as ZeroGStoredSession;
+    if (!session.token || session.expiresAt < Date.now() + 60_000) {
+      window.localStorage.removeItem(zeroGSessionKey(walletAddress));
+      return null;
+    }
+
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+function storeZeroGSession(walletAddress: string, token: string, expiresIn = 7 * 24 * 60 * 60) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const session: ZeroGStoredSession = {
+    token,
+    expiresAt: Date.now() + expiresIn * 1000,
+  };
+
+  window.localStorage.setItem(zeroGSessionKey(walletAddress), JSON.stringify(session));
+}
+
+function getZeroGWallet(wallets: ConnectedWallet[], walletAddress?: string | null) {
+  const normalizedWallet = walletAddress?.toLowerCase();
+
+  if (normalizedWallet) {
+    const matchedWallet = wallets.find(
+      (wallet) => wallet.address.toLowerCase() === normalizedWallet,
+    );
+    if (matchedWallet) {
+      return matchedWallet;
+    }
+  }
+
+  return wallets[0] ?? null;
+}
+
+async function fetchZeroGJson<T>(path: string, token?: string) {
+  if (!zeroGBackendUrl) {
+    throw new Error("VITE_ZG_BACKEND is not configured.");
+  }
+
+  const response = await fetch(`${zeroGBackendUrl}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  const data = (await response.json().catch(() => null)) as T | null;
+
+  if (!response.ok) {
+    const message =
+      data && typeof data === "object" && "error" in data
+        ? String(data.error)
+        : response.statusText;
+    throw new Error(message || `0G request failed with status ${response.status}`);
+  }
+
+  return data as T;
+}
+
+async function authenticateZeroGWallet({
+  walletAddress,
+  connectedWallet,
+  signEmbeddedMessage,
+  addLog,
+}: {
+  walletAddress: string;
+  connectedWallet?: ConnectedWallet | null;
+  signEmbeddedMessage: (message: string) => Promise<string>;
+  addLog: (level: ZeroGLogLevel, message: string) => void;
+}) {
+  const storedSession = getStoredZeroGSession(walletAddress);
+  if (storedSession) {
+    return storedSession.token;
+  }
+
+  addLog("info", `Requesting nonce for ${truncateHash(walletAddress, 10, 6)}`);
+  const nonceResponse = await fetchZeroGJson<ZeroGNonceResponse>(
+    `/auth/nonce?wallet=${encodeURIComponent(walletAddress)}`,
+  );
+
+  if (!nonceResponse?.nonce || !nonceResponse.message) {
+    throw new Error("Nonce response was missing signing data.");
+  }
+
+  addLog("success", "Nonce received from backend.");
+  addLog("info", "Signing message with wallet...");
+  const signature = connectedWallet
+    ? await connectedWallet.sign(nonceResponse.message)
+    : await signEmbeddedMessage(nonceResponse.message);
+
+  addLog("info", "Signature obtained. Exchanging for JWT...");
+  const loginResponse = await fetch(`${zeroGBackendUrl}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      wallet: walletAddress,
+      nonce: nonceResponse.nonce,
+      signature,
+    }),
+  });
+  const loginData = (await loginResponse.json().catch(() => null)) as ZeroGLoginResponse | null;
+
+  if (!loginResponse.ok || !loginData?.token) {
+    throw new Error(`0G login failed with status ${loginResponse.status}`);
+  }
+
+  storeZeroGSession(walletAddress, loginData.token, loginData.expiresIn);
+  addLog("success", "Authentication complete. JWT valid for 7 days.");
+
+  return loginData.token;
+}
 
 function getZeroGExplorerUrl(explorerUrl?: string) {
   return (explorerUrl || "https://chainscan.0g.ai").replace(/\/$/, "");
@@ -290,7 +501,9 @@ async function syncRobowarUser(user: PrivyUser, options?: SyncRobowarUserOptions
     if (!response.ok) {
       const syncStep = syncResult?.syncStep ? ` at ${syncResult.syncStep}` : "";
       const detail = syncResult?.detail ? `: ${syncResult.detail}` : "";
-      throw new Error(`Robowar user sync failed with status ${response.status}${syncStep}${detail}`);
+      throw new Error(
+        `Robowar user sync failed with status ${response.status}${syncStep}${detail}`,
+      );
     }
 
     console.info("Robowar 0G login transaction", {
@@ -321,7 +534,9 @@ async function fetchRobowarTransactionHistory(user: PrivyUser) {
   }
 
   const response = await fetch(`${robowarBackendUrl}/api/users/history?${params.toString()}`);
-  const result = (await response.json().catch(() => null)) as RobowarTransactionHistoryResponse | null;
+  const result = (await response
+    .json()
+    .catch(() => null)) as RobowarTransactionHistoryResponse | null;
 
   if (!response.ok) {
     throw new Error(`Robowar transaction history failed with status ${response.status}`);
@@ -896,8 +1111,83 @@ function TransactionHistoryModal({
 }) {
   const [history, setHistory] = useState<RobowarTransactionHistoryItem[]>([]);
   const [historyMeta, setHistoryMeta] = useState<RobowarTransactionHistoryResponse["meta"]>();
+  const [zeroGNetwork, setZeroGNetwork] = useState<ZeroGNetworkResponse | null>(null);
+  const [zeroGDashboard, setZeroGDashboard] = useState<ZeroGDashboardResponse | null>(null);
+  const [zeroGActivity, setZeroGActivity] = useState<ZeroGActivityEvent[]>([]);
+  const [zeroGLogs, setZeroGLogs] = useState<ZeroGLogEntry[]>([]);
+  const [isZeroGLoading, setIsZeroGLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [zeroGError, setZeroGError] = useState("");
+  const { wallets } = useWallets();
+  const { signMessage } = useSignMessage();
+  const walletsRef = useRef<ConnectedWallet[]>([]);
+
+  useEffect(() => {
+    walletsRef.current = wallets;
+  }, [wallets]);
+
+  const addZeroGLog = useCallback((level: ZeroGLogLevel, message: string) => {
+    setZeroGLogs((currentLogs) => [
+      {
+        id: `${Date.now()}-${currentLogs.length}`,
+        time: nowLogTime(),
+        level,
+        message,
+      },
+      ...currentLogs,
+    ]);
+  }, []);
+
+  const loadZeroGData = useCallback(async () => {
+    setIsZeroGLoading(true);
+    setZeroGError("");
+
+    try {
+      const network = await fetchZeroGJson<ZeroGNetworkResponse>("/0g/network");
+      setZeroGNetwork(network);
+
+      if (!user) {
+        setZeroGDashboard(null);
+        setZeroGActivity([]);
+        return;
+      }
+
+      const walletAddress = resolveRobowarWalletAddress(user);
+      if (!walletAddress) {
+        throw new Error("Connect a wallet to load your 0G dashboard.");
+      }
+
+      const connectedWallet = getZeroGWallet(walletsRef.current, walletAddress);
+      const token = await authenticateZeroGWallet({
+        walletAddress,
+        connectedWallet,
+        addLog: addZeroGLog,
+        signEmbeddedMessage: async (message) => {
+          const result = await signMessage({ message }, { address: walletAddress });
+          return result.signature;
+        },
+      });
+
+      addZeroGLog("info", "Fetching dashboard data...");
+      const [dashboard, activity] = await Promise.all([
+        fetchZeroGJson<ZeroGDashboardResponse>("/0g/dashboard", token),
+        fetchZeroGJson<ZeroGActivityResponse>("/0g/activity?limit=20", token),
+      ]);
+
+      setZeroGDashboard(dashboard);
+      setZeroGActivity(activity.events ?? []);
+      addZeroGLog("success", "Dashboard data loaded.");
+    } catch (zeroGLoadError) {
+      const message =
+        zeroGLoadError instanceof Error ? zeroGLoadError.message : "Could not load 0G data.";
+      console.warn("Could not load ZeroDash data", zeroGLoadError);
+      setZeroGError(message);
+      addZeroGLog("error", message);
+    } finally {
+      setIsZeroGLoading(false);
+    }
+  }, [addZeroGLog, signMessage, user]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -909,6 +1199,14 @@ function TransactionHistoryModal({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    void loadZeroGData();
+  }, [isOpen, loadZeroGData]);
 
   useEffect(() => {
     if (!isOpen || !user) {
@@ -956,6 +1254,15 @@ function TransactionHistoryModal({
     latestHistory?.indexExplorerUrl ||
     getZeroGTransactionUrl(latestHistory?.indexTransactionHash, explorerUrl);
   const latestRecordedAt = latestHistory?.indexedAt ?? latestHistory?.createdAt;
+  const zeroGServices = Object.values(zeroGNetwork?.services ?? {});
+  const trustScore = zeroGDashboard?.trustScore;
+  const zeroGSummary = zeroGDashboard?.summary;
+  const zeroGSummaryCards = [
+    { label: "Total Saves", value: zeroGSummary?.totalSaves ?? 0 },
+    { label: "DA Finalized", value: zeroGSummary?.finalizedSaves ?? 0 },
+    { label: "Anchored", value: zeroGSummary?.anchoredSaves ?? 0 },
+    { label: "Data Stored", value: zeroGSummary?.totalDataStored ?? "0 B" },
+  ];
 
   return (
     <div className="fixed inset-0 z-[180] flex items-start justify-center overflow-y-auto p-4">
@@ -1051,6 +1358,217 @@ function TransactionHistoryModal({
           </div>
         </div>
 
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+          <div className="rounded-[1.25rem] border border-accent/45 bg-background/70 p-5 md:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="font-display text-sm font-black uppercase tracking-[0.26em] text-muted-foreground">
+                  Network Status
+                </h3>
+                <p className="mt-2 font-display text-sm font-black uppercase tracking-[0.16em] text-accent">
+                  Overall: {zeroGNetwork?.overall ?? (isZeroGLoading ? "loading" : "unknown")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadZeroGData()}
+                disabled={isZeroGLoading}
+                aria-label="Refresh network status"
+                title="Refresh"
+                className="grid h-10 w-10 place-items-center rounded-md border border-accent/45 bg-accent/10 text-accent transition hover:bg-accent/15 disabled:opacity-50"
+              >
+                <RefreshCw className={`h-4 w-4 ${isZeroGLoading ? "animate-spin" : ""}`} />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {zeroGServices.length === 0 &&
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-12 animate-pulse rounded-md border border-foreground/15 bg-muted/50"
+                  />
+                ))}
+              {zeroGServices.map((service) => (
+                <div
+                  key={`${service.label}-${service.endpoint}`}
+                  className="grid gap-2 rounded-md border border-foreground/15 bg-muted/45 p-3 sm:grid-cols-[1fr_auto_auto]"
+                >
+                  <span className="min-w-0 font-display text-xs font-black uppercase tracking-[0.14em] text-foreground">
+                    {service.label ?? "0G Service"}
+                  </span>
+                  <span className="font-display text-xs font-black text-accent">
+                    {service.status ?? "unknown"}
+                  </span>
+                  <span className="font-display text-xs font-black text-muted-foreground">
+                    {typeof service.latencyMs === "number" ? `${service.latencyMs}ms` : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[1.25rem] border border-accent/45 bg-background/70 p-5 md:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="font-display text-sm font-black uppercase tracking-[0.26em] text-muted-foreground">
+                Trust Score
+              </h3>
+              <button
+                type="button"
+                onClick={() => void loadZeroGData()}
+                disabled={isZeroGLoading}
+                className="inline-flex items-center gap-2 rounded-md border border-accent/45 bg-accent/10 px-3 py-2 font-display text-xs font-black uppercase tracking-[0.12em] text-accent transition hover:bg-accent/15 disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isZeroGLoading ? "animate-spin" : ""}`} />
+                Refresh Stats
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-[8rem_1fr]">
+              <div className="rounded-[1.1rem] bg-muted/75 p-5 text-center">
+                <p className="font-display text-5xl font-black text-foreground">
+                  {trustScore?.score ?? 0}
+                </p>
+                <p className="mt-2 font-display text-xs font-black uppercase tracking-[0.16em] text-accent">
+                  {trustScore?.label ?? "UNVERIFIED"}
+                </p>
+              </div>
+              <div className="rounded-[1.1rem] bg-muted/55 p-5">
+                <p className="text-sm font-semibold leading-relaxed text-muted-foreground">
+                  {trustScore?.description ?? "No saves found on 0G yet."}
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {zeroGSummaryCards.map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-md border border-foreground/15 bg-background/45 p-3"
+                    >
+                      <p className="font-display text-2xl font-black text-foreground">
+                        {item.value}
+                      </p>
+                      <p className="mt-1 font-display text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                        {item.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {zeroGError && (
+              <div className="mt-4 rounded-md border border-primary/40 bg-primary/10 p-3 font-display text-xs font-black text-primary">
+                {zeroGError}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-6 xl:grid-cols-2">
+          <div className="rounded-[1.25rem] border border-accent/45 bg-background/70 p-5 md:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="font-display text-sm font-black uppercase tracking-[0.26em] text-muted-foreground">
+                0G Activity
+              </h3>
+              <span className="font-display text-sm font-black tracking-[0.16em] text-accent">
+                {zeroGActivity.length} events
+              </span>
+            </div>
+            <div className="mt-5 max-h-72 space-y-3 overflow-y-auto pr-1">
+              {!user && (
+                <div className="rounded-md border border-foreground/20 bg-muted/50 p-4 font-display text-sm font-black text-muted-foreground">
+                  Login to load your 0G activity.
+                </div>
+              )}
+              {user && !isZeroGLoading && zeroGActivity.length === 0 && (
+                <div className="rounded-md border border-foreground/20 bg-muted/50 p-4 font-display text-sm font-black text-muted-foreground">
+                  No 0G activity yet.
+                </div>
+              )}
+              {zeroGActivity.map((event) => {
+                const content = (
+                  <>
+                    <div className="min-w-0">
+                      <p className="font-display text-sm font-black text-foreground">
+                        {event.title ?? event.type ?? "0G event"}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold leading-relaxed text-muted-foreground">
+                        {event.description ?? event.status ?? "Updated on 0G."}
+                      </p>
+                    </div>
+                    <span className="font-display text-xs font-black text-accent">
+                      {formatHistoryTime(event.timestamp)}
+                    </span>
+                  </>
+                );
+
+                if (event.explorerUrl) {
+                  return (
+                    <a
+                      key={event.id ?? event.title}
+                      href={event.explorerUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="grid gap-3 rounded-md border border-foreground/15 bg-muted/45 p-4 transition hover:border-accent/45 hover:bg-accent/10 sm:grid-cols-[1fr_auto]"
+                    >
+                      {content}
+                    </a>
+                  );
+                }
+
+                return (
+                  <div
+                    key={event.id ?? event.title}
+                    className="grid gap-3 rounded-md border border-foreground/15 bg-muted/45 p-4 sm:grid-cols-[1fr_auto]"
+                  >
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-[1.25rem] border border-accent/45 bg-background/70 p-5 md:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="font-display text-sm font-black uppercase tracking-[0.26em] text-muted-foreground">
+                Log Output
+              </h3>
+              <button
+                type="button"
+                onClick={() => setZeroGLogs([])}
+                aria-label="Clear log output"
+                title="Clear"
+                className="grid h-10 w-10 place-items-center rounded-md border border-foreground/25 bg-foreground/5 text-muted-foreground transition hover:border-primary/45 hover:text-primary"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-5 max-h-72 space-y-2 overflow-y-auto rounded-md border border-foreground/15 bg-black/45 p-3 font-mono text-xs">
+              {zeroGLogs.length === 0 && (
+                <p className="font-display text-sm font-black text-muted-foreground">
+                  Waiting for 0G requests.
+                </p>
+              )}
+              {zeroGLogs.map((entry) => (
+                <div key={entry.id} className="grid grid-cols-[5.5rem_5rem_1fr] gap-2">
+                  <span className="text-muted-foreground">[{entry.time}]</span>
+                  <span
+                    className={
+                      entry.level === "success"
+                        ? "text-accent"
+                        : entry.level === "error"
+                          ? "text-primary"
+                          : "text-muted-foreground"
+                    }
+                  >
+                    [{entry.level.toUpperCase().padEnd(7, " ")}]
+                  </span>
+                  <span className="min-w-0 text-foreground">{entry.message}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="mt-6 rounded-[1.25rem] border border-accent/45 bg-background/70 p-5 md:p-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="font-display text-sm font-black uppercase tracking-[0.26em] text-muted-foreground">
@@ -1139,8 +1657,6 @@ function TransactionHistoryModal({
 }
 
 function BattleSystemSection() {
-  const [isInfoOpen, setIsInfoOpen] = useState(false);
-  const { user } = usePrivy();
   const playerAiName = "Dragon Thrower";
 
   const matchSummary = [
@@ -1151,153 +1667,145 @@ function BattleSystemSection() {
   ];
 
   return (
-    <>
-      <section
-        id="battle-system"
-        className="relative overflow-hidden border-y border-primary/20 bg-background bg-cover bg-center bg-no-repeat px-6 py-24"
-        style={{ backgroundImage: `url(${aiCombatBg})` }}
-      >
-        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/65 to-background/90 pointer-events-none" />
-        <div className="relative mx-auto max-w-7xl">
+    <section
+      id="battle-system"
+      className="relative overflow-hidden border-y border-primary/20 bg-background bg-cover bg-center bg-no-repeat px-6 py-24"
+      style={{ backgroundImage: `url(${aiCombatBg})` }}
+    >
+      <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/65 to-background/90 pointer-events-none" />
+      <div className="relative mx-auto max-w-7xl">
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={revealViewport}
+          className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between"
+        >
+          <div>
+            <span className="inline-flex items-center gap-2 text-sm font-display tracking-[0.3em] text-accent">
+              <BrainCircuit className="h-4 w-4" />
+              INTELLIGENT GAME SYSTEM
+            </span>
+            <h2 className="mt-3 max-w-3xl font-display text-5xl font-black leading-none md:text-7xl">
+              AI COMBAT,
+              <br />
+              <span className="text-primary">0G DATA</span>
+            </h2>
+            <p className="mt-5 max-w-2xl text-lg font-semibold leading-relaxed text-muted-foreground">
+              Your battles don't end when you stop playing.{" "}
+              <span className="text-foreground">Your AI keeps evolving in AI Arena.</span>
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 md:justify-end">
+            {systemSignals.map((signal) => (
+              <SignalBadge key={signal.label} icon={signal.icon} label={signal.label} />
+            ))}
+          </div>
+        </motion.div>
+
+        <InfrastructureStrip />
+
+        <div className="mt-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
           <motion.div
             variants={fadeUp}
             initial="hidden"
             whileInView="show"
             viewport={revealViewport}
-            className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between"
+            className="relative overflow-hidden border border-primary/30 bg-card/45 p-5 backdrop-blur clip-blade"
           >
-            <div>
-              <span className="inline-flex items-center gap-2 text-sm font-display tracking-[0.3em] text-accent">
-                <BrainCircuit className="h-4 w-4" />
-                INTELLIGENT GAME SYSTEM
-              </span>
-              <h2 className="mt-3 max-w-3xl font-display text-5xl font-black leading-none md:text-7xl">
-                AI COMBAT,
-                <br />
-                <span className="text-primary">0G DATA</span>
-              </h2>
-              <p className="mt-5 max-w-2xl text-lg font-semibold leading-relaxed text-muted-foreground">
-                Your battles don't end when you stop playing.{" "}
-                <span className="text-foreground">Your AI keeps evolving in AI Arena.</span>
-              </p>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.65_0.27_5_/_0.14),transparent_62%)] pointer-events-none" />
+            <div className="absolute inset-0 scanline opacity-45 pointer-events-none" />
+
+            <div className="relative z-10 flex justify-end">
+              <Link
+                to="/dashboard"
+                className="button-energy relative inline-flex items-center gap-2 overflow-hidden border border-accent/60 px-4 py-2 font-display text-xs font-black tracking-[0.18em] text-accent clip-blade transition hover:bg-accent/10"
+              >
+                <Database className="h-4 w-4" />
+                DASHBOARD
+              </Link>
             </div>
-            <div className="flex flex-wrap gap-2 md:justify-end">
-              {systemSignals.map((signal) => (
-                <SignalBadge key={signal.label} icon={signal.icon} label={signal.label} />
+
+            <div className="relative z-10 mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {matchSummary.map((item) => (
+                <div
+                  key={item.label}
+                  className="border border-accent/20 bg-background/50 p-3 clip-blade"
+                >
+                  <p className="font-display text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 font-display text-sm font-black text-foreground">
+                    {item.value}
+                  </p>
+                </div>
               ))}
+            </div>
+
+            <div className="relative z-10 mt-6 overflow-hidden p-4">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.78_0.18_200_/_0.12),transparent_65%)] pointer-events-none" />
+              <motion.img
+                whileHover={{ y: -18, scale: 1.03 }}
+                transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                src={battleRobotImg}
+                alt="Dragon Thrower combat robot"
+                className="relative mx-auto max-h-[360px] w-full cursor-pointer object-contain drop-shadow-[0_0_28px_oklch(0.65_0.27_5_/_0.28)]"
+              />
             </div>
           </motion.div>
 
-          <InfrastructureStrip />
-
-          <div className="mt-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <motion.div
+            variants={staggerGroup}
+            initial="hidden"
+            whileInView="show"
+            viewport={revealViewport}
+            className="grid gap-5"
+          >
             <motion.div
               variants={fadeUp}
-              initial="hidden"
-              whileInView="show"
-              viewport={revealViewport}
-              className="relative overflow-hidden border border-primary/30 bg-card/45 p-5 backdrop-blur clip-blade"
+              className="border border-accent/25 bg-card/55 p-5 clip-blade"
             >
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.65_0.27_5_/_0.14),transparent_62%)] pointer-events-none" />
-              <div className="absolute inset-0 scanline opacity-45 pointer-events-none" />
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-display text-xl font-black">AI COMBAT ANALYSIS</h3>
+                <Activity className="h-5 w-5 text-accent" />
+              </div>
+              <div className="mt-5 space-y-3">
+                {aiDecisionFeed.map((item, index) => (
+                  <div key={item} className="flex items-center gap-3 text-sm">
+                    <span className="grid h-6 w-6 place-items-center border border-accent/40 bg-accent/10 text-accent clip-blade">
+                      <CircleDot className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="font-semibold text-muted-foreground">{item}</span>
+                    <span className="ml-auto font-display text-[10px] tracking-[0.2em] text-accent/80">
+                      0{index + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
 
-              <div className="relative z-10 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsInfoOpen(true)}
-                  className="button-energy relative inline-flex items-center gap-2 overflow-hidden border border-accent/60 px-4 py-2 font-display text-xs font-black tracking-[0.18em] text-accent clip-blade transition hover:bg-accent/10"
+            <motion.div variants={fadeUp} className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+              {recommendationCards.map((item) => (
+                <div
+                  key={item.title}
+                  className="border border-primary/25 bg-background/65 p-4 transition hover:border-primary/65 hover:bg-primary/10 clip-blade"
                 >
-                  <Eye className="h-4 w-4" />
-                  VIEW HISTORY
-                </button>
-              </div>
-
-              <div className="relative z-10 mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {matchSummary.map((item) => (
-                  <div
-                    key={item.label}
-                    className="border border-accent/20 bg-background/50 p-3 clip-blade"
-                  >
-                    <p className="font-display text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-                      {item.label}
-                    </p>
-                    <p className="mt-1 font-display text-sm font-black text-foreground">
-                      {item.value}
-                    </p>
+                  <div className="flex items-center gap-2 text-primary">
+                    <Crosshair className="h-4 w-4" />
+                    <span className="font-display text-[10px] font-black uppercase tracking-[0.22em]">
+                      {item.title}
+                    </span>
                   </div>
-                ))}
-              </div>
-
-              <div className="relative z-10 mt-6 overflow-hidden p-4">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.78_0.18_200_/_0.12),transparent_65%)] pointer-events-none" />
-                <motion.img
-                  whileHover={{ y: -18, scale: 1.03 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
-                  src={battleRobotImg}
-                  alt="Dragon Thrower combat robot"
-                  className="relative mx-auto max-h-[360px] w-full cursor-pointer object-contain drop-shadow-[0_0_28px_oklch(0.65_0.27_5_/_0.28)]"
-                />
-              </div>
-            </motion.div>
-
-            <motion.div
-              variants={staggerGroup}
-              initial="hidden"
-              whileInView="show"
-              viewport={revealViewport}
-              className="grid gap-5"
-            >
-              <motion.div
-                variants={fadeUp}
-                className="border border-accent/25 bg-card/55 p-5 clip-blade"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-display text-xl font-black">AI COMBAT ANALYSIS</h3>
-                  <Activity className="h-5 w-5 text-accent" />
+                  <p className="mt-2 font-display text-lg font-black">{item.value}</p>
+                  <p className="mt-1 text-xs font-semibold text-muted-foreground">{item.desc}</p>
                 </div>
-                <div className="mt-5 space-y-3">
-                  {aiDecisionFeed.map((item, index) => (
-                    <div key={item} className="flex items-center gap-3 text-sm">
-                      <span className="grid h-6 w-6 place-items-center border border-accent/40 bg-accent/10 text-accent clip-blade">
-                        <CircleDot className="h-3.5 w-3.5" />
-                      </span>
-                      <span className="font-semibold text-muted-foreground">{item}</span>
-                      <span className="ml-auto font-display text-[10px] tracking-[0.2em] text-accent/80">
-                        0{index + 1}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-
-              <motion.div variants={fadeUp} className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                {recommendationCards.map((item) => (
-                  <div
-                    key={item.title}
-                    className="border border-primary/25 bg-background/65 p-4 transition hover:border-primary/65 hover:bg-primary/10 clip-blade"
-                  >
-                    <div className="flex items-center gap-2 text-primary">
-                      <Crosshair className="h-4 w-4" />
-                      <span className="font-display text-[10px] font-black uppercase tracking-[0.22em]">
-                        {item.title}
-                      </span>
-                    </div>
-                    <p className="mt-2 font-display text-lg font-black">{item.value}</p>
-                    <p className="mt-1 text-xs font-semibold text-muted-foreground">{item.desc}</p>
-                  </div>
-                ))}
-              </motion.div>
+              ))}
             </motion.div>
-          </div>
+          </motion.div>
         </div>
-      </section>
-      <TransactionHistoryModal
-        isOpen={isInfoOpen}
-        onClose={() => setIsInfoOpen(false)}
-        user={user}
-      />
-    </>
+      </div>
+    </section>
   );
 }
 
@@ -1394,6 +1902,7 @@ function Index() {
   }, [
     authenticated,
     ready,
+    user,
     user?.email?.address,
     user?.google?.email,
     user?.id,
@@ -1431,9 +1940,9 @@ function Index() {
             </span> */}
           </div>
           <nav className="hidden items-center gap-8 justify-self-center text-sm font-display tracking-widest text-muted-foreground md:flex">
-            <a href="#features" className="hover:text-primary transition">
-              ARENAS
-            </a>
+            <Link to="/dashboard" className="hover:text-primary transition">
+              DASHBOARD
+            </Link>
             <a href="#trailer" className="hover:text-primary transition">
               TRAILER
             </a>
@@ -1463,13 +1972,13 @@ function Index() {
         {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
           <div className="md:hidden absolute top-full left-0 w-full bg-background/95 backdrop-blur-xl border-b border-primary/20 p-6 flex flex-col gap-6 shadow-2xl z-50">
-            <a
-              href="#features"
+            <Link
+              to="/dashboard"
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-sm font-display tracking-widest text-foreground hover:text-primary transition"
             >
-              ARENAS
-            </a>
+              DASHBOARD
+            </Link>
             <a
               href="#trailer"
               onClick={() => setIsMobileMenuOpen(false)}
