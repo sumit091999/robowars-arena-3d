@@ -852,15 +852,6 @@ function MobilePcOnlyNotice({ className = "" }: { className?: string }) {
               <Eye className="h-3.5 w-3.5" />
               Trailer
             </a>
-            <a
-              href={documentationPdf}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 border border-accent/35 bg-transparent px-4 py-2.5 font-display text-[10px] font-black uppercase tracking-[0.16em] text-accent clip-blade transition hover:border-primary/60 hover:bg-primary/10 hover:text-foreground"
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              Manual
-            </a>
           </div>
         </div>
       </div>
