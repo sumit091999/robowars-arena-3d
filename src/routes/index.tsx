@@ -1,6 +1,7 @@
-import { useState, useEffect, useLayoutEffect, type FormEvent } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useLoginWithEmail, useLoginWithOAuth, usePrivy } from "@privy-io/react-auth";
+import type { LinkedAccountWithMetadata, User as PrivyUser } from "@privy-io/react-auth";
 import { motion, Variants, useScroll, useSpring } from "framer-motion";
 import {
   Activity,
@@ -13,7 +14,7 @@ import {
   Database,
   Download,
   Eye,
-  Hash,
+  ExternalLink,
   Lock,
   RadioTower,
   Swords,
@@ -24,6 +25,7 @@ import {
   X,
   Unplug,
   Mail,
+  Monitor,
   Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -124,13 +126,6 @@ const recommendationCards = [
     desc: "Recover the robot when it rolls or gets overturned.",
   },
 ];
-const verificationSteps = [
-  "Match setup captured",
-  "WASD movement state sampled",
-  "E attack arm input summarized",
-  "R flip recovery state saved",
-  "Result report generated",
-];
 const manualControls = [
   { key: "W", action: "Forward" },
   { key: "S", action: "Backward" },
@@ -139,16 +134,202 @@ const manualControls = [
   { key: "E", action: "Attack Arm On/Off" },
   { key: "R", action: "Flip The Robot" },
 ];
-const reportId = "RW-AI-0G-472";
 const macDownloadUrl = import.meta.env.VITE_MAC_DOWNLOAD_URL;
 const windowsDownloadUrl =
   import.meta.env.VITE_WINDOWS_DOWNLOAD_URL ??
   "https://game-build.sfo3.cdn.digitaloceanspaces.com/Robowars.zip";
+const robowarBackendUrl = (import.meta.env.VITE_ROBOWAR_BACKEND_URL ?? "").replace(/\/$/, "");
 type DownloadOption = {
   label: string;
   href?: string;
   disabled?: boolean;
 };
+type RobowarLoginType = "google" | "email" | "connect_wallet";
+type SyncRobowarUserOptions = {
+  onStart?: () => void;
+};
+type RobowarTransactionHistoryItem = {
+  id: string;
+  privyUserId: string;
+  walletAddress: string;
+  loginType: RobowarLoginType;
+  storageRoot: string;
+  storageTransactionHash: string | null;
+  indexTransactionHash: string;
+  indexBlockNumber: number;
+  indexBlockTimestamp: number | null;
+  indexedAt: string | null;
+  indexExplorerUrl: string | null;
+  createdAt: string | null;
+  savedAt: string | null;
+};
+type RobowarTransactionHistoryResponse = {
+  history?: RobowarTransactionHistoryItem[];
+  meta?: {
+    contractAddress?: string;
+    explorerUrl?: string;
+  };
+};
+const robowarSyncInFlightUserKeys = new Set<string>();
+
+function getZeroGExplorerUrl(explorerUrl?: string) {
+  return (explorerUrl || "https://chainscan.0g.ai").replace(/\/$/, "");
+}
+
+function getZeroGAddressUrl(address?: string, explorerUrl?: string) {
+  return address ? `${getZeroGExplorerUrl(explorerUrl)}/address/${address}` : null;
+}
+
+function getZeroGTransactionUrl(hash?: string | null, explorerUrl?: string) {
+  return hash ? `${getZeroGExplorerUrl(explorerUrl)}/tx/${hash}` : null;
+}
+
+function truncateHash(value?: string | null, head = 8, tail = 6) {
+  if (!value) {
+    return "Pending";
+  }
+
+  if (value.length <= head + tail + 3) {
+    return value;
+  }
+
+  return `${value.slice(0, head)}...${value.slice(-tail)}`;
+}
+
+function formatHistoryDate(value?: string | null) {
+  if (!value) {
+    return "Pending";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatHistoryTime(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function getLinkedAccountTime(account: LinkedAccountWithMetadata) {
+  return new Date(account.latestVerifiedAt ?? account.firstVerifiedAt ?? 0).getTime();
+}
+
+function resolveRobowarLoginType(user: PrivyUser): RobowarLoginType {
+  const latestLoginAccount = user.linkedAccounts
+    .filter((account) => ["google_oauth", "email", "wallet"].includes(account.type))
+    .sort((first, second) => getLinkedAccountTime(second) - getLinkedAccountTime(first))[0];
+
+  if (latestLoginAccount?.type === "google_oauth") {
+    return "google";
+  }
+
+  if (latestLoginAccount?.type === "email") {
+    return "email";
+  }
+
+  return user.google ? "google" : user.email ? "email" : "connect_wallet";
+}
+
+function resolveRobowarWalletAddress(user: PrivyUser) {
+  const linkedWallet = user.linkedAccounts.find(
+    (account): account is Extract<LinkedAccountWithMetadata, { type: "wallet" }> =>
+      account.type === "wallet",
+  );
+
+  return user.wallet?.address ?? linkedWallet?.address ?? null;
+}
+
+async function syncRobowarUser(user: PrivyUser, options?: SyncRobowarUserOptions) {
+  if (!robowarBackendUrl) {
+    return;
+  }
+
+  const walletAddress = resolveRobowarWalletAddress(user);
+
+  if (!walletAddress) {
+    console.warn("Skipping Robowar 0G sync because Privy did not return a wallet address yet");
+    return;
+  }
+
+  const loginType = resolveRobowarLoginType(user);
+  const syncKey = `${user.id}:${walletAddress}:${loginType}`;
+
+  if (robowarSyncInFlightUserKeys.has(syncKey)) {
+    return;
+  }
+
+  robowarSyncInFlightUserKeys.add(syncKey);
+  options?.onStart?.();
+
+  try {
+    const response = await fetch(`${robowarBackendUrl}/api/users/auth`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        privyUserId: user.id,
+        walletAddress,
+        loginType,
+        email: user.email?.address ?? user.google?.email ?? null,
+        linkedAccounts: user.linkedAccounts.map((account) => account.type),
+      }),
+    });
+
+    const syncResult = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const syncStep = syncResult?.syncStep ? ` at ${syncResult.syncStep}` : "";
+      const detail = syncResult?.detail ? `: ${syncResult.detail}` : "";
+      throw new Error(`Robowar user sync failed with status ${response.status}${syncStep}${detail}`);
+    }
+
+    console.info("Robowar 0G login transaction", {
+      transactionHash: syncResult.user?.indexTransactionHash,
+      indexedAt: syncResult.user?.indexedAt,
+      explorerUrl: syncResult.user?.indexExplorerUrl,
+    });
+  } catch (error) {
+    console.warn("Could not sync Robowar user", error);
+  } finally {
+    robowarSyncInFlightUserKeys.delete(syncKey);
+  }
+}
+
+async function fetchRobowarTransactionHistory(user: PrivyUser) {
+  if (!robowarBackendUrl) {
+    return { history: [] } satisfies RobowarTransactionHistoryResponse;
+  }
+
+  const walletAddress = resolveRobowarWalletAddress(user);
+  const params = new URLSearchParams({
+    privyUserId: user.id,
+    limit: "100",
+  });
+
+  if (walletAddress) {
+    params.set("walletAddress", walletAddress);
+  }
+
+  const response = await fetch(`${robowarBackendUrl}/api/users/history?${params.toString()}`);
+  const result = (await response.json().catch(() => null)) as RobowarTransactionHistoryResponse | null;
+
+  if (!response.ok) {
+    throw new Error(`Robowar transaction history failed with status ${response.status}`);
+  }
+
+  return result ?? { history: [] };
+}
+
 const downloadOptions = [
   {
     label: "Download for Mac",
@@ -364,7 +545,8 @@ function GoogleMark() {
 }
 
 function RobowarsLoginModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { login } = usePrivy();
+  const { login, authenticated } = usePrivy();
+  const walletLoginInFlightRef = useRef(false);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
@@ -410,6 +592,12 @@ function RobowarsLoginModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (authenticated) {
+      walletLoginInFlightRef.current = false;
+    }
+  }, [authenticated]);
+
   if (!isOpen) {
     return null;
   }
@@ -451,12 +639,22 @@ function RobowarsLoginModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   };
 
   const handleWalletLogin = () => {
+    if (walletLoginInFlightRef.current) {
+      setError("A wallet request is already open. Confirm or cancel it in MetaMask.");
+      return;
+    }
+
+    walletLoginInFlightRef.current = true;
     setPending("wallet");
     onClose();
     login({
       loginMethods: ["wallet"],
       walletChainType: "ethereum-only",
     });
+
+    window.setTimeout(() => {
+      walletLoginInFlightRef.current = false;
+    }, 60_000);
   };
 
   const handleGoogleLogin = async () => {
@@ -630,7 +828,93 @@ function InfrastructureStrip() {
   );
 }
 
-function BattleInfoModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function MobilePcOnlyNotice({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`min-[860px]:hidden border border-accent/45 bg-background/80 p-4 text-left shadow-cyan backdrop-blur clip-blade ${className}`}
+    >
+      <div className="flex items-start gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center border border-primary/50 bg-primary/15 text-primary clip-blade">
+          <Monitor className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="font-display text-sm font-black uppercase tracking-[0.18em] text-accent">
+            PC build only
+          </p>
+          <p className="mt-2 text-sm font-semibold leading-relaxed text-muted-foreground">
+            Robowars is made for Windows and Mac. Open this page on desktop to download and play.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a
+              href="#trailer"
+              className="inline-flex items-center gap-2 border border-accent/45 bg-accent/10 px-3 py-2 font-display text-[10px] font-black uppercase tracking-[0.16em] text-accent transition hover:bg-accent/15"
+            >
+              Trailer
+            </a>
+            <a
+              href={documentationPdf}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 border border-foreground/20 bg-foreground/5 px-3 py-2 font-display text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground transition hover:border-accent/45 hover:text-accent"
+            >
+              Manual
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ZeroGDaToast({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) {
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <motion.div
+      role="status"
+      aria-live="polite"
+      initial={{ opacity: 0, x: 28, scale: 0.96 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ duration: 0.22, ease: "easeOut" }}
+      className="zero-g-da-toast"
+    >
+      <div className="zero-g-da-toast-icon">
+        <Database className="h-7 w-7" />
+      </div>
+      <div className="min-w-0">
+        <p className="zero-g-da-toast-title">Saving to 0G DA</p>
+        <p className="zero-g-da-toast-message">
+          Session data submitted to 0G Data Availability layer
+        </p>
+      </div>
+      <button
+        type="button"
+        aria-label="Dismiss 0G DA notification"
+        onClick={onClose}
+        className="zero-g-da-toast-close"
+      >
+        <X className="h-5 w-5" />
+      </button>
+    </motion.div>
+  );
+}
+
+function TransactionHistoryModal({
+  isOpen,
+  onClose,
+  user,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  user?: PrivyUser | null;
+}) {
+  const [history, setHistory] = useState<RobowarTransactionHistoryItem[]>([]);
+  const [historyMeta, setHistoryMeta] = useState<RobowarTransactionHistoryResponse["meta"]>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -642,87 +926,228 @@ function BattleInfoModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (!isOpen || !user) {
+      return;
+    }
+
+    let isMounted = true;
+
+    setIsLoading(true);
+    setError("");
+    void fetchRobowarTransactionHistory(user)
+      .then((result) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setHistory(result.history ?? []);
+        setHistoryMeta(result.meta);
+      })
+      .catch((historyError) => {
+        if (!isMounted) {
+          return;
+        }
+
+        console.warn("Could not load Robowar transaction history", historyError);
+        setError("Could not load transaction history.");
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, user?.id, user?.wallet?.address, user]);
+
   if (!isOpen) return null;
 
+  const latestHistory = history[0];
+  const explorerUrl = historyMeta?.explorerUrl;
+  const contractUrl = getZeroGAddressUrl(historyMeta?.contractAddress, explorerUrl);
+  const latestTransactionUrl =
+    latestHistory?.indexExplorerUrl ||
+    getZeroGTransactionUrl(latestHistory?.indexTransactionHash, explorerUrl);
+  const latestRecordedAt = latestHistory?.indexedAt ?? latestHistory?.createdAt;
+
   return (
-    <div className="fixed inset-0 z-[180] grid place-items-center p-4">
+    <div className="fixed inset-0 z-[180] flex items-start justify-center overflow-y-auto p-4">
       <button
         type="button"
-        aria-label="Close battle information"
+        aria-label="Close transaction history"
         onClick={onClose}
         className="absolute inset-0 bg-black/78 backdrop-blur-md"
       />
       <motion.div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="battle-info-title"
+        aria-labelledby="transaction-history-title"
         initial={{ opacity: 0, scale: 0.94, y: 18 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.18, ease: "easeOut" }}
-        className="relative w-full max-w-2xl overflow-hidden border border-accent/45 bg-background/95 p-6 shadow-cyan clip-blade"
+        className="relative z-10 my-6 max-h-[calc(100vh-3rem)] w-full max-w-5xl overflow-y-auto rounded-[1.35rem] border border-accent/45 bg-background/95 p-5 shadow-cyan backdrop-blur md:p-8"
       >
         <button
           type="button"
-          aria-label="Close battle information"
+          aria-label="Close transaction history"
           onClick={onClose}
           className="absolute right-5 top-5 grid h-9 w-9 place-items-center rounded-full border border-primary/50 bg-secondary/70 text-foreground transition hover:border-accent hover:text-accent"
         >
           <X className="h-4 w-4" />
         </button>
-        <span className="inline-flex items-center gap-2 text-xs font-display font-bold uppercase tracking-[0.28em] text-accent">
-          <Activity className="h-4 w-4" />
-          Battle Information
-        </span>
-        <h3 id="battle-info-title" className="mt-3 font-display text-3xl font-black">
-          SYSTEM DATA PANEL
-        </h3>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <div className="border border-primary/25 bg-card/45 p-4 clip-blade">
-            <p className="text-xs font-display uppercase tracking-[0.22em] text-muted-foreground">
-              Report ID
-            </p>
-            <p className="mt-2 flex items-center gap-2 font-display text-xl text-accent">
-              <Hash className="h-5 w-5" />
-              {reportId}
-            </p>
-          </div>
-          <div className="border border-primary/25 bg-card/45 p-4 clip-blade">
-            <p className="text-xs font-display uppercase tracking-[0.22em] text-muted-foreground">
-              Data source
-            </p>
-            <p className="mt-2 flex items-center gap-2 font-display text-xl text-primary">
-              <BookOpen className="h-5 w-5" />
-              ROBOWARS GAME
-            </p>
-          </div>
-        </div>
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          {manualControls.map((control) => (
-            <div
-              key={control.key}
-              className="border border-accent/25 bg-background/60 p-3 clip-blade"
+
+        <div className="rounded-[1.25rem] border border-accent/45 bg-background/70 p-5 shadow-[0_0_32px_oklch(0.78_0.18_200_/_0.16)] md:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h3
+              id="transaction-history-title"
+              className="font-display text-sm font-black uppercase tracking-[0.26em] text-muted-foreground"
             >
-              <span className="grid h-8 w-8 place-items-center border border-primary/60 bg-primary/15 font-display text-sm font-black text-primary">
-                {control.key}
-              </span>
-              <p className="mt-2 text-xs font-display font-black uppercase tracking-[0.16em] text-foreground">
-                {control.action}
+              On-chain session · 0G EVM
+            </h3>
+            <span className="inline-flex items-center gap-2 rounded-full border border-accent/50 bg-accent/10 px-4 py-2 font-display text-xs font-black uppercase tracking-[0.16em] text-accent">
+              <span className="hud-status-dot" />
+              Live
+            </span>
+          </div>
+
+          <div className="mt-7 grid gap-4 md:grid-cols-3">
+            <div className="rounded-[1.1rem] bg-muted/75 p-5">
+              <p className="font-display text-sm font-black uppercase tracking-[0.16em] text-muted-foreground">
+                Session #
+              </p>
+              <p className="mt-3 font-display text-4xl font-black text-foreground">
+                {history.length || "-"}
               </p>
             </div>
-          ))}
-        </div>
-        <div className="mt-6 space-y-3">
-          {verificationSteps.map((step, index) => (
-            <div key={step} className="flex items-center gap-3 text-sm">
-              <span className="grid h-7 w-7 place-items-center border border-accent/50 bg-accent/10 text-accent clip-blade">
-                <CircleDot className="h-4 w-4" />
-              </span>
-              <span className="font-semibold text-foreground">{step}</span>
-              <span className="ml-auto font-display text-[10px] tracking-[0.2em] text-muted-foreground">
-                STEP {index + 1}
-              </span>
+            <div className="rounded-[1.1rem] bg-muted/75 p-5">
+              <p className="font-display text-sm font-black uppercase tracking-[0.16em] text-muted-foreground">
+                Recorded
+              </p>
+              <p className="mt-3 font-display text-2xl font-black text-foreground">
+                {formatHistoryDate(latestRecordedAt)}
+              </p>
+              <p className="font-display text-sm font-black tracking-[0.16em] text-muted-foreground">
+                {formatHistoryTime(latestRecordedAt)}
+              </p>
             </div>
-          ))}
+            <div className="rounded-[1.1rem] bg-muted/75 p-5">
+              <p className="font-display text-sm font-black uppercase tracking-[0.16em] text-muted-foreground">
+                Logins on-chain
+              </p>
+              <p className="mt-3 font-display text-4xl font-black text-foreground">
+                {history.length}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            {contractUrl && (
+              <a
+                href={contractUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-md border border-accent/55 bg-accent/10 px-5 py-3 font-display text-sm font-black text-accent transition hover:bg-accent/15"
+              >
+                Contract <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
+            {latestTransactionUrl && (
+              <a
+                href={latestTransactionUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-md border border-foreground/25 bg-foreground/5 px-5 py-3 font-display text-sm font-black text-muted-foreground transition hover:border-accent/45 hover:text-accent"
+              >
+                My Activity <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-[1.25rem] border border-accent/45 bg-background/70 p-5 md:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-display text-sm font-black uppercase tracking-[0.26em] text-muted-foreground">
+              On-chain login history · 0G EVM
+            </h3>
+            <span className="font-display text-sm font-black tracking-[0.16em] text-accent">
+              {isLoading ? "loading" : `${history.length} sessions`}
+            </span>
+          </div>
+
+          <div className="mt-6 max-h-[42vh] space-y-4 overflow-y-auto pr-1">
+            {!user && (
+              <div className="rounded-[1.1rem] border border-foreground/20 bg-muted/50 p-5 font-display text-sm font-black text-muted-foreground">
+                Login to load your 0G transaction history.
+              </div>
+            )}
+            {error && (
+              <div className="rounded-[1.1rem] border border-primary/40 bg-primary/10 p-5 font-display text-sm font-black text-primary">
+                {error}
+              </div>
+            )}
+            {isLoading &&
+              Array.from({ length: 2 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-28 animate-pulse rounded-[1.1rem] border border-foreground/20 bg-muted/55"
+                />
+              ))}
+            {!isLoading && user && history.length === 0 && !error && (
+              <div className="rounded-[1.1rem] border border-foreground/20 bg-muted/50 p-5 font-display text-sm font-black text-muted-foreground">
+                No on-chain login history yet.
+              </div>
+            )}
+            {!isLoading &&
+              history.map((item, index) => {
+                const transactionUrl =
+                  item.indexExplorerUrl ||
+                  getZeroGTransactionUrl(item.indexTransactionHash, explorerUrl);
+                const recordedAt = item.indexedAt ?? item.createdAt;
+                const historyKey =
+                  item.indexTransactionHash ||
+                  item.storageTransactionHash ||
+                  `${item.walletAddress}-${recordedAt}-${index}`;
+
+                return (
+                  <a
+                    key={historyKey}
+                    href={transactionUrl ?? "#"}
+                    target={transactionUrl ? "_blank" : undefined}
+                    rel={transactionUrl ? "noreferrer" : undefined}
+                    className="grid gap-4 rounded-[1.1rem] border border-foreground/20 bg-muted/60 p-5 transition hover:border-accent/50 hover:bg-accent/10 sm:grid-cols-[5rem_1fr_auto]"
+                  >
+                    <div>
+                      <p className="font-display text-3xl font-black text-foreground">
+                        #{history.length - index}
+                      </p>
+                      <p className="mt-1 font-display text-xs font-black text-muted-foreground">
+                        {formatHistoryDate(recordedAt).replace(/, \d{4}$/, "")}
+                      </p>
+                      <p className="font-display text-xs font-black text-muted-foreground">
+                        {formatHistoryTime(recordedAt)}
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-display text-sm font-black tracking-[0.08em] text-muted-foreground">
+                        {truncateHash(item.indexTransactionHash, 10, 6)}
+                      </p>
+                      <p className="mt-3 text-sm font-bold text-muted-foreground">
+                        {item.loginType.replace("_", " ")} login · block {item.indexBlockNumber}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-muted-foreground/75">
+                        root {truncateHash(item.storageRoot, 10, 6)}
+                      </p>
+                    </div>
+                    <span className="grid h-12 w-12 place-items-center self-center rounded-md border border-accent/40 bg-accent/10 text-accent">
+                      <ExternalLink className="h-5 w-5" />
+                    </span>
+                  </a>
+                );
+              })}
+          </div>
         </div>
       </motion.div>
     </div>
@@ -731,6 +1156,7 @@ function BattleInfoModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
 function BattleSystemSection() {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const { user } = usePrivy();
   const playerAiName = "Dragon Thrower";
 
   const matchSummary = [
@@ -788,18 +1214,14 @@ function BattleSystemSection() {
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.65_0.27_5_/_0.14),transparent_62%)] pointer-events-none" />
               <div className="absolute inset-0 scanline opacity-45 pointer-events-none" />
 
-              <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-2 border border-accent/40 bg-accent/10 px-3 py-2 font-display text-xs font-black tracking-[0.2em] text-accent clip-blade">
-                  <Activity className="h-4 w-4" />
-                  BATTLE BRIEF
-                </span>
+              <div className="relative z-10 flex justify-end">
                 <button
                   type="button"
                   onClick={() => setIsInfoOpen(true)}
                   className="button-energy relative inline-flex items-center gap-2 overflow-hidden border border-accent/60 px-4 py-2 font-display text-xs font-black tracking-[0.18em] text-accent clip-blade transition hover:bg-accent/10"
                 >
                   <Eye className="h-4 w-4" />
-                  VIEW DETAILS
+                  VIEW HISTORY
                 </button>
               </div>
 
@@ -882,13 +1304,22 @@ function BattleSystemSection() {
           </div>
         </div>
       </section>
-      <BattleInfoModal isOpen={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
+      <TransactionHistoryModal
+        isOpen={isInfoOpen}
+        onClose={() => setIsInfoOpen(false)}
+        user={user}
+      />
     </>
   );
 }
 
 function Index() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isZeroGDaToastVisible, setIsZeroGDaToastVisible] = useState(false);
+  const zeroGDaToastTimerRef = useRef<number | null>(null);
+  const previousAuthenticatedRef = useRef<boolean | null>(null);
+  const syncedAuthenticatedSessionRef = useRef(false);
+  const { ready, authenticated, user } = usePrivy();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -906,8 +1337,74 @@ function Index() {
     }
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (zeroGDaToastTimerRef.current !== null) {
+        window.clearTimeout(zeroGDaToastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const showZeroGDaToast = useCallback(() => {
+    if (zeroGDaToastTimerRef.current !== null) {
+      window.clearTimeout(zeroGDaToastTimerRef.current);
+    }
+
+    setIsZeroGDaToastVisible(true);
+    zeroGDaToastTimerRef.current = window.setTimeout(() => {
+      setIsZeroGDaToastVisible(false);
+      zeroGDaToastTimerRef.current = null;
+    }, 6_000);
+  }, []);
+
+  const hideZeroGDaToast = useCallback(() => {
+    if (zeroGDaToastTimerRef.current !== null) {
+      window.clearTimeout(zeroGDaToastTimerRef.current);
+      zeroGDaToastTimerRef.current = null;
+    }
+
+    setIsZeroGDaToastVisible(false);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+
+    const wasAuthenticated = previousAuthenticatedRef.current;
+    const isFreshLogin = wasAuthenticated === false && authenticated;
+    previousAuthenticatedRef.current = authenticated;
+
+    if (!authenticated) {
+      syncedAuthenticatedSessionRef.current = false;
+      hideZeroGDaToast();
+      return;
+    }
+
+    if (!user || syncedAuthenticatedSessionRef.current) {
+      return;
+    }
+
+    syncedAuthenticatedSessionRef.current = true;
+    void syncRobowarUser(user, {
+      onStart: isFreshLogin ? showZeroGDaToast : undefined,
+    });
+  }, [
+    authenticated,
+    ready,
+    user?.email?.address,
+    user?.google?.email,
+    user?.id,
+    user?.linkedAccounts,
+    user?.wallet?.address,
+    hideZeroGDaToast,
+    showZeroGDaToast,
+  ]);
+
   return (
     <main className="relative min-h-screen bg-background text-foreground overflow-x-hidden">
+      <ZeroGDaToast isVisible={isZeroGDaToastVisible} onClose={hideZeroGDaToast} />
+
       {/* Reading Progress Bar */}
       <motion.div
         className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-accent z-[100] origin-left"
@@ -1053,8 +1550,10 @@ function Index() {
               ))}
             </div>
 
+            <MobilePcOnlyNotice className="mx-auto mt-8 max-w-md min-[860px]:mx-0" />
+
             <div className="mt-10 flex flex-wrap gap-4 justify-center min-[860px]:justify-start">
-              <AuthDownloadButton className="button-energy group relative inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
+              <AuthDownloadButton className="button-energy group relative hidden items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow min-[860px]:inline-flex" />
               <motion.a
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
@@ -1213,6 +1712,7 @@ function Index() {
             ))}
           </div>
           <div className="relative mt-10 flex flex-wrap justify-center gap-4" id="play">
+            <MobilePcOnlyNotice className="w-full max-w-md" />
             <a
               href={documentationPdf}
               target="_blank"
@@ -1221,7 +1721,7 @@ function Index() {
             >
               <BookOpen className="w-5 h-5" /> GAME MANUAL
             </a>
-            <AuthDownloadButton className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow" />
+            <AuthDownloadButton className="button-energy hidden items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow min-[860px]:inline-flex" />
           </div>
         </motion.div>
       </section>
