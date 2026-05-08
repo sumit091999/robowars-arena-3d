@@ -1545,14 +1545,21 @@ function Index() {
               <br />
               THE <span className="text-primary">ARENA</span>
             </h1>
-            <p className="mx-auto mt-6 max-w-lg text-lg leading-[1.75] text-muted-foreground min-[860px]:mx-0 min-[860px]:leading-relaxed">
-              <span className="block">Forge your war machine.</span>
-              <span className="mt-2 block">
-                Battle ruthless AI champions
-                <br />
-                inside deadly arenas.
+            <p className="mx-auto mt-6 max-w-lg text-lg leading-[1.75] text-muted-foreground min-[860px]:mx-0 min-[860px]:max-w-[58rem] min-[860px]:font-body min-[860px]:text-[1.32rem] min-[860px]:font-medium min-[860px]:leading-[1.48] min-[860px]:tracking-normal">
+              <span className="min-[860px]:hidden">
+                <span className="block">Forge your war machine.</span>
+                <span className="mt-2 block">
+                  Battle ruthless AI champions
+                  <br />
+                  inside deadly arenas.
+                </span>
+                <span className="mt-2 block text-foreground">Only one survives.</span>
               </span>
-              <span className="mt-2 block text-foreground">Only one survives.</span>
+              <span className="hidden min-[860px]:block">
+                Forge a war machine of fury and steel. Pit it against ruthless AI champions in
+                arenas built to destroy. Only one rolls out. Will it be{" "}
+                <span className="text-foreground">yours?</span>
+              </span>
             </p>
             <div className="mt-6 flex flex-wrap gap-2 justify-center min-[860px]:justify-start">
               {systemSignals.map((signal) => (
@@ -1562,15 +1569,15 @@ function Index() {
 
             <MobilePcOnlyNotice className="mx-auto mt-8 max-w-md min-[860px]:mx-0" />
 
-            <div className="mt-10 flex flex-wrap gap-4 justify-center min-[860px]:justify-start">
-              <AuthDownloadButton className="button-energy group relative hidden items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow min-[860px]:inline-flex" />
+            <div className="mt-10 flex flex-wrap gap-4 justify-center min-[860px]:flex-nowrap min-[860px]:items-center min-[860px]:justify-start">
+              <AuthDownloadButton className="button-energy group relative hidden shrink-0 items-center gap-3 overflow-hidden whitespace-nowrap px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow min-[860px]:inline-flex min-[860px]:px-6 min-[1024px]:px-8" />
               <motion.a
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
                 href={documentationPdf}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 border-2 border-accent/60 text-accent font-display font-bold tracking-widest clip-blade hover:bg-accent/10 transition shadow-cyan"
+                className="button-energy inline-flex shrink-0 items-center gap-3 overflow-hidden whitespace-nowrap px-8 py-4 border-2 border-accent/60 text-accent font-display font-bold tracking-widest clip-blade hover:bg-accent/10 transition shadow-cyan min-[860px]:px-6 min-[1024px]:px-8"
               >
                 <BookOpen className="w-5 h-5" />
                 GAME MANUAL
@@ -1721,17 +1728,20 @@ function Index() {
               </div>
             ))}
           </div>
-          <div className="relative mt-10 flex flex-wrap justify-center gap-4" id="play">
+          <div
+            className="relative mt-10 flex flex-wrap justify-center gap-4 min-[860px]:flex-nowrap min-[860px]:items-center"
+            id="play"
+          >
             <MobilePcOnlyNotice className="w-full max-w-md" />
             <a
               href={documentationPdf}
               target="_blank"
               rel="noopener noreferrer"
-              className="button-energy inline-flex items-center gap-3 overflow-hidden px-8 py-4 border-2 border-accent/60 text-accent font-display font-bold tracking-widest clip-blade hover:bg-accent/10 transition"
+              className="button-energy inline-flex shrink-0 items-center gap-3 overflow-hidden whitespace-nowrap px-8 py-4 border-2 border-accent/60 text-accent font-display font-bold tracking-widest clip-blade hover:bg-accent/10 transition min-[860px]:px-6 min-[1024px]:px-8"
             >
               <BookOpen className="w-5 h-5" /> GAME MANUAL
             </a>
-            <AuthDownloadButton className="button-energy hidden items-center gap-3 overflow-hidden px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow min-[860px]:inline-flex" />
+            <AuthDownloadButton className="button-energy hidden shrink-0 items-center gap-3 overflow-hidden whitespace-nowrap px-8 py-4 bg-primary text-primary-foreground font-display font-bold tracking-widest clip-blade shadow-glow min-[860px]:inline-flex min-[860px]:px-6 min-[1024px]:px-8" />
           </div>
         </motion.div>
       </section>
