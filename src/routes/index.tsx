@@ -1193,6 +1193,10 @@ function BattleSystemSection() {
                 <br />
                 <span className="text-primary">0G DATA</span>
               </h2>
+              <p className="mt-5 max-w-2xl text-lg font-semibold leading-relaxed text-muted-foreground">
+                Your battles don't end when you stop playing.{" "}
+                <span className="text-foreground">Your AI keeps evolving in AI Arena.</span>
+              </p>
             </div>
             <div className="flex flex-wrap gap-2 md:justify-end">
               {systemSignals.map((signal) => (
