@@ -844,15 +844,6 @@ function MobilePcOnlyNotice({ className = "" }: { className?: string }) {
           <p className="mt-2 text-sm font-semibold leading-[1.75] text-muted-foreground">
             Robowars is made for Windows and Mac. Open this page on desktop to download and play.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <a
-              href="#trailer"
-              className="button-energy relative inline-flex items-center gap-2 overflow-hidden border border-primary/70 bg-primary px-4 py-2.5 font-display text-[10px] font-black uppercase tracking-[0.16em] text-primary-foreground shadow-glow clip-blade transition hover:bg-primary/90"
-            >
-              <Eye className="h-3.5 w-3.5" />
-              Trailer
-            </a>
-          </div>
         </div>
       </div>
     </div>
