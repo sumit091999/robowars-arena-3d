@@ -80,7 +80,7 @@ const combatFeed = [
 const systemSignals = [
   { icon: BrainCircuit, label: "AI-powered combat analysis" },
   { icon: Database, label: "Battle data recorded" },
-  { icon: Lock, label: "0G state reference" },
+  { icon: Lock, label: "0G Verified State" },
 ];
 const infraStatus = [
   {
@@ -789,8 +789,8 @@ function DisconnectButton({ onComplete }: { onComplete?: () => void }) {
 
 function SignalBadge({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
-    <span className="inline-flex items-center gap-2 border border-accent/35 bg-background/55 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-accent backdrop-blur clip-blade">
-      <Icon className="h-3.5 w-3.5" />
+    <span className="group inline-flex items-center gap-2.5 border border-accent/50 bg-background/70 px-3.5 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-accent shadow-[0_0_16px_oklch(0.78_0.18_200_/_0.16)] backdrop-blur clip-blade transition duration-200 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/10 hover:text-foreground hover:shadow-[0_0_22px_oklch(0.65_0.27_5_/_0.28)] active:scale-[0.98]">
+      <Icon className="h-[18px] w-[18px] shrink-0 transition duration-200 group-hover:scale-110 group-hover:text-primary" />
       {label}
     </span>
   );
@@ -841,22 +841,24 @@ function MobilePcOnlyNotice({ className = "" }: { className?: string }) {
           <p className="font-display text-sm font-black uppercase tracking-[0.18em] text-accent">
             PC build only
           </p>
-          <p className="mt-2 text-sm font-semibold leading-relaxed text-muted-foreground">
+          <p className="mt-2 text-sm font-semibold leading-[1.75] text-muted-foreground">
             Robowars is made for Windows and Mac. Open this page on desktop to download and play.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <a
               href="#trailer"
-              className="inline-flex items-center gap-2 border border-accent/45 bg-accent/10 px-3 py-2 font-display text-[10px] font-black uppercase tracking-[0.16em] text-accent transition hover:bg-accent/15"
+              className="button-energy relative inline-flex items-center gap-2 overflow-hidden border border-primary/70 bg-primary px-4 py-2.5 font-display text-[10px] font-black uppercase tracking-[0.16em] text-primary-foreground shadow-glow clip-blade transition hover:bg-primary/90"
             >
+              <Eye className="h-3.5 w-3.5" />
               Trailer
             </a>
             <a
               href={documentationPdf}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 border border-foreground/20 bg-foreground/5 px-3 py-2 font-display text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground transition hover:border-accent/45 hover:text-accent"
+              className="inline-flex items-center gap-2 border border-accent/35 bg-transparent px-4 py-2.5 font-display text-[10px] font-black uppercase tracking-[0.16em] text-accent clip-blade transition hover:border-primary/60 hover:bg-primary/10 hover:text-foreground"
             >
+              <BookOpen className="h-3.5 w-3.5" />
               Manual
             </a>
           </div>
@@ -1543,10 +1545,14 @@ function Index() {
               <br />
               THE <span className="text-primary">ARENA</span>
             </h1>
-            <p className="mt-6 text-lg text-muted-foreground max-w-lg leading-relaxed mx-auto min-[860px]:mx-0">
-              Forge a war machine of fury and steel. Pit it against ruthless AI champions in arenas
-              built to destroy. Only one rolls out.{" "}
-              <span className="text-foreground">Will it be yours?</span>
+            <p className="mx-auto mt-6 max-w-lg text-lg leading-[1.75] text-muted-foreground min-[860px]:mx-0 min-[860px]:leading-relaxed">
+              <span className="block">Forge your war machine.</span>
+              <span className="mt-2 block">
+                Battle ruthless AI champions
+                <br />
+                inside deadly arenas.
+              </span>
+              <span className="mt-2 block text-foreground">Only one survives.</span>
             </p>
             <div className="mt-6 flex flex-wrap gap-2 justify-center min-[860px]:justify-start">
               {systemSignals.map((signal) => (
@@ -1704,12 +1710,12 @@ function Index() {
             {manualControls.map((control) => (
               <div
                 key={control.key}
-                className="border border-accent/30 bg-background/70 p-3 text-left backdrop-blur clip-blade"
+                className="flex min-h-28 flex-col items-center justify-center border border-accent/30 bg-background/70 p-3 text-center backdrop-blur clip-blade"
               >
                 <span className="grid h-9 w-9 place-items-center border border-primary/70 bg-primary/15 font-display text-sm font-black text-primary">
                   {control.key}
                 </span>
-                <p className="mt-3 text-[10px] font-display font-black uppercase tracking-[0.14em] text-foreground">
+                <p className="mt-3 text-center text-[10px] font-display font-black uppercase tracking-[0.14em] text-foreground">
                   {control.action}
                 </p>
               </div>
