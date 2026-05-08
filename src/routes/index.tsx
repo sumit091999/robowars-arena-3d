@@ -1306,6 +1306,7 @@ function Index() {
   const [isZeroGDaToastVisible, setIsZeroGDaToastVisible] = useState(false);
   const zeroGDaToastTimerRef = useRef<number | null>(null);
   const previousAuthenticatedRef = useRef<boolean | null>(null);
+  const shouldShowToastOnNextSyncRef = useRef(false);
   const syncedAuthenticatedSessionRef = useRef(false);
   const { ready, authenticated, user } = usePrivy();
   const { scrollYProgress } = useScroll();
@@ -1360,11 +1361,12 @@ function Index() {
     }
 
     const wasAuthenticated = previousAuthenticatedRef.current;
-    const isFreshLogin = wasAuthenticated === false && authenticated;
+    const becameAuthenticated = wasAuthenticated !== true && authenticated;
     previousAuthenticatedRef.current = authenticated;
 
     if (!authenticated) {
       syncedAuthenticatedSessionRef.current = false;
+      shouldShowToastOnNextSyncRef.current = false;
       hideZeroGDaToast();
       return;
     }
@@ -1373,9 +1375,21 @@ function Index() {
       return;
     }
 
+    if (becameAuthenticated) {
+      shouldShowToastOnNextSyncRef.current = true;
+    }
+
+    const walletAddress = resolveRobowarWalletAddress(user);
+    if (!walletAddress) {
+      return;
+    }
+
+    const shouldShowToast = shouldShowToastOnNextSyncRef.current;
     syncedAuthenticatedSessionRef.current = true;
+    shouldShowToastOnNextSyncRef.current = false;
+
     void syncRobowarUser(user, {
-      onStart: isFreshLogin ? showZeroGDaToast : undefined,
+      onStart: shouldShowToast ? showZeroGDaToast : undefined,
     });
   }, [
     authenticated,
