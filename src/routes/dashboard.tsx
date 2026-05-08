@@ -340,6 +340,9 @@ function DashboardHeader() {
           <img src={roboLogo} alt="Robowars Logo" className="h-8 w-auto object-contain" />
         </Link>
         <nav className="hidden items-center gap-8 justify-self-center text-sm font-display tracking-widest text-muted-foreground md:flex">
+          <Link to="/" className="hover:text-primary transition">
+            HOME
+          </Link>
           <Link to="/dashboard" className="hover:text-primary transition">
             DASHBOARD
           </Link>
@@ -370,6 +373,13 @@ function DashboardHeader() {
 
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 w-full bg-background/95 backdrop-blur-xl border-b border-primary/20 p-6 flex flex-col gap-6 shadow-2xl z-50">
+          <Link
+            to="/"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="text-sm font-display tracking-widest text-foreground hover:text-primary transition"
+          >
+            HOME
+          </Link>
           <Link
             to="/dashboard"
             onClick={() => setIsMobileMenuOpen(false)}
