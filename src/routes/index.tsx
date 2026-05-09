@@ -38,7 +38,6 @@ import {
   Wallet,
   RefreshCw,
   Trash2,
-  Play,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { RobotScene } from "@/components/RobotScene";
@@ -558,26 +557,6 @@ const downloadOptions = [
   },
 ] satisfies DownloadOption[];
 
-function PlayButton({ className }: { className?: string }) {
-  const [isActive, setIsActive] = useState(false);
-
-  return (
-    <button
-      type="button"
-      aria-pressed={isActive}
-      onClick={() => setIsActive(true)}
-      className={`${className ?? ""} hover:border-accent hover:bg-accent hover:text-accent-foreground hover:shadow-[0_0_34px_oklch(0.78_0.18_200_/_0.46)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 ${
-        isActive
-          ? "border-accent bg-accent text-accent-foreground shadow-[0_0_34px_oklch(0.78_0.18_200_/_0.46)]"
-          : ""
-      }`}
-    >
-      <Play className="h-5 w-5 fill-current" />
-      PLAY
-    </button>
-  );
-}
-
 function FooterSocialIcon({ icon }: { icon: string }) {
   if (icon === "discord") {
     return (
@@ -607,7 +586,7 @@ function AuthDownloadButton({ className }: { className: string }) {
   const { ready, authenticated } = usePrivy();
 
   if (authenticated) {
-    return <PlayButton className={className} />;
+    return <DownloadGameButton className={className} />;
   }
 
   return (
@@ -699,9 +678,6 @@ function DownloadMenuOption({
 }
 
 function FooterDownloadMenu() {
-  return <AuthDownloadButton className="inline-flex items-center gap-2 text-left transition" />;
-
-  /*
   const { authenticated } = usePrivy();
   const itemClassName =
     "gap-3 rounded-sm px-3 py-3 text-xs font-bold tracking-[0.16em] text-foreground focus:text-primary";
@@ -737,7 +713,6 @@ function FooterDownloadMenu() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-  */
 }
 
 function WindowsLogo({ className }: { className?: string }) {
