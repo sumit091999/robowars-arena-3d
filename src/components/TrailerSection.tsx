@@ -1,12 +1,58 @@
-import { useRef, useState } from "react";
-import { Pause, Play } from "lucide-react";
-import trailerBg from "@/assets/ChatGPT Image May 4, 2026, 10_29_48 PM.png";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Play } from "lucide-react";
 import trailerVideo from "@/assets/Trailer.MOV";
 
 export function TrailerSection() {
+  const sectionRef = useRef<HTMLElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+
+  const playTrailer = useCallback((muteForAutoplay = false) => {
+    const video = videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    if (muteForAutoplay) {
+      video.muted = true;
+    }
+
+    void video.play().catch(() => {
+      setIsPlaying(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+
+    if (!section) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const video = videoRef.current;
+
+        if (!video) {
+          return;
+        }
+
+        if (entry.isIntersecting) {
+          playTrailer(true);
+          return;
+        }
+
+        video.pause();
+      },
+      { threshold: 0.45 },
+    );
+
+    observer.observe(section);
+
+    return () => observer.disconnect();
+  }, [playTrailer]);
 
   const toggleTrailerPlayback = () => {
     const video = videoRef.current;
@@ -16,7 +62,7 @@ export function TrailerSection() {
     }
 
     if (video.paused) {
-      void video.play();
+      playTrailer();
       return;
     }
 
@@ -24,7 +70,13 @@ export function TrailerSection() {
   };
 
   return (
-    <section id="trailer" className="relative overflow-hidden px-6 py-28 bg-background">
+    <section
+      ref={sectionRef}
+      id="trailer"
+      className="relative overflow-hidden px-6 py-28 bg-background"
+      onMouseEnter={() => playTrailer(true)}
+      onFocus={() => playTrailer(true)}
+    >
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background pointer-events-none" />
       <div className="max-w-6xl mx-auto relative">
         <div className="text-center mb-12">
@@ -43,9 +95,9 @@ export function TrailerSection() {
               ref={videoRef}
               className="h-full w-full object-cover"
               controls
+              muted
               playsInline
               preload="metadata"
-              poster={trailerBg}
               onPlay={() => {
                 setHasStarted(true);
                 setIsPlaying(true);
@@ -63,7 +115,7 @@ export function TrailerSection() {
                 onClick={toggleTrailerPlayback}
                 className="trailer-center-control"
               >
-                {hasStarted ? <Pause className="h-10 w-10" /> : <Play className="h-10 w-10" />}
+                <Play className="h-10 w-10" />
               </button>
             )}
           </div>
