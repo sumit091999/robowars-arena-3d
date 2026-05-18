@@ -2277,19 +2277,29 @@ function Index() {
             viewport={revealViewport}
             className="text-center mb-12"
           >
-            <span className="inline-flex items-center justify-center gap-2 text-accent text-xs tracking-[0.4em] font-display">
-              <span className="hud-status-dot" />
-              POWERED BY
-            </span>
-            <h2 className="mt-3 font-display font-black text-4xl md:text-5xl tracking-wider">
+            <h2 className="font-display font-black text-4xl md:text-5xl tracking-wider">
               <span className="text-primary">KULT</span>
               <span className="text-foreground">GAMES</span>
               <span className="text-muted-foreground"> ECOSYSTEM</span>
             </h2>
+            <span className="mt-4 inline-flex items-center justify-center gap-2 text-accent text-xs tracking-[0.4em] font-display">
+              <span className="hud-status-dot" />
+              <span>POWERED BY</span>
+              <span
+                className="relative inline-block h-4 w-9 overflow-hidden align-middle"
+                aria-label="0G"
+              >
+                <img
+                  src={kultLogo}
+                  alt=""
+                  className="absolute right-0 top-0 h-full max-w-none object-contain"
+                />
+              </span>
+              <span>AI INFRASTRUCTURE</span>
+            </span>
             <p className="mt-4 text-muted-foreground max-w-2xl mx-auto text-sm md:text-base">
-              An ecosystem <span className="text-accent">FOR GAMERS BY GAMERS</span>. A visionary
-              Play &amp; Earn &amp; Engage universe with SocialFi and multichain interoperability —
-              Robowars joins the Kult roster.
+              The AI-native gaming universe where autonomous agents, players, and worlds evolve
+              together.
             </p>
           </motion.div>
 
@@ -2300,14 +2310,14 @@ function Index() {
             viewport={revealViewport}
             className="mt-10 flex flex-wrap items-center justify-center gap-3 text-[10px] tracking-[0.3em] font-display text-muted-foreground"
           >
-            <span>PLAY</span>
+            <span>OWN</span>
             <span className="text-primary">◆</span>
-            <span>EARN</span>
+            <span>BATTLE</span>
             <span className="text-primary">◆</span>
-            <span>ENGAGE</span>
+            <span>EVOLVE</span>
             <span className="text-primary">◆</span>
             {/* <span>SOCIALFI</span><span className="text-primary">◆</span> */}
-            <span>MULTICHAIN</span>
+            <span>DOMINATE</span>
           </motion.div>
         </div>
       </section>
